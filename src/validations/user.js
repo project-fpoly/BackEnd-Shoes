@@ -13,3 +13,15 @@ export const signInValidator = Joi.object({
     email: Joi.string().required().email(),
     password: Joi.string().required().min(6).max(255),
 })
+export const updateValidator = Joi.object({
+    deliveryAddress: Joi.string().required().min(3).max(255),
+    email: Joi.string().required().email(),
+    gender: Joi.string().required().valid("male", "female", "other"),
+    dateOfBirth: Joi.date().required().iso(),
+    avt: Joi.string().required(),
+    phoneNumbers: Joi.array()
+      .items(Joi.string().min(10).max(11))
+      .max(3)
+      .required()
+      .unique(),
+  });

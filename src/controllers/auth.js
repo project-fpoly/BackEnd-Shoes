@@ -1,4 +1,4 @@
-import { signInValidator, signUpValidator } from "../validations/user";
+import { signInValidator, signUpValidator, updateValidator } from "../validations/user";
 import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import dotenv from "dotenv";
@@ -60,7 +60,7 @@ export const signIn = async (req, res) => {
         message: "Password không đúng, vui lòng kiểm tra lại!",
       });
     }
-    const accessToken = jwt.sign({  _id: user._id }, SECRET_CODE, {
+    const accessToken = jwt.sign({ _id: user._id }, SECRET_CODE, {
       expiresIn: "1d",
     });
     user.password = undefined;
@@ -86,7 +86,7 @@ export const deleteUser = async (req, res) => {
     }
 
     user.password = undefined;
-    
+
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
       user,
@@ -113,8 +113,15 @@ export const getAllUsers = async (req, res) => {
 };
 export const updateUser = async (req, res) => {
   try {
+    const { error } = updateValidator.validate(req.body, { abortEarly: false });
+    if (error) {
+      const errors = error.details.map((err) => err.message);
+      return res.status(400).json({
+        message: errors,
+      });
+    }
     const userId = req.params.userId;
-    const updatedUser = req.body; 
+    const updatedUser = req.body;
 
     const existingUser = await User.findById(userId);
     if (!existingUser) {
@@ -123,22 +130,55 @@ export const updateUser = async (req, res) => {
       });
     }
 
-    if (updatedUser.email && updatedUser.email !== existingUser.email) {
-      const emailExist = await User.findOne({ email: updatedUser.email });
-      if (emailExist) {
+    existingUser.avt = updatedUser.avt || existingUser.avt;
+    existingUser.deliveryAddress =
+      updatedUser.deliveryAddress || existingUser.deliveryAddress;
+    existingUser.gender = updatedUser.gender || existingUser.gender;
+    existingUser.dateOfBirth =
+      updatedUser.dateOfBirth || existingUser.dateOfBirth;
+
+    // Kiểm tra số địa chỉ giao hàng
+    if (
+      updatedUser.deliveryAddresses &&
+      updatedUser.deliveryAddresses.length > 0
+    ) {
+      if (updatedUser.deliveryAddresses.length > 3) {
         return res.status(400).json({
-          message: "Email đã được sử dụng",
+          message: "Chỉ được phép cung cấp tối đa 3 địa chỉ giao hàng",
         });
       }
-    }
 
-    existingUser.email = updatedUser.email || existingUser.email;
+      const uniqueAddresses = [
+        ...new Set(updatedUser.deliveryAddresses),
+      ];
+      if (uniqueAddresses.length !== updatedUser.deliveryAddresses.length) {
+        return res.status(400).json({
+          message: "Địa chỉ giao hàng không được trùng lặp",
+        });
+      }
+
+      for (const address of uniqueAddresses) {
+        const addressExist = await User.findOne({
+          "deliveryAddresses.address": address,
+          _id: { $ne: userId },
+        });
+        if (addressExist) {
+          return res.status(400).json({
+            message: `Địa chỉ giao hàng ${address} đã được sử dụng bởi người dùng khác`,
+          });
+        }
+      }
+
+      existingUser.deliveryAddresses = uniqueAddresses.map((address) => ({
+        address,
+      }));
+    }
 
     const savedUser = await existingUser.save();
 
-    //không thể thay đổi user và tạm thời có cả password
-    savedUser.password = undefined; 
-    savedUser.userName = undefined; 
+    // Không thể thay đổi user và tạm thời có cả password
+    savedUser.password = undefined;
+    savedUser.userName = undefined;
 
     return res.status(200).json({
       message: "Cập nhật thông tin người dùng thành công",
@@ -151,5 +191,3 @@ export const updateUser = async (req, res) => {
     });
   }
 };
-
-
