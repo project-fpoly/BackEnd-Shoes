@@ -76,4 +76,80 @@ export const signIn = async (req, res) => {
     });
   }
 };
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.userId);
+    if (!user) {
+      return res.status(404).json({
+        message: "Không tìm thấy người dùng.",
+      });
+    }
+
+    user.password = undefined;
+    
+    return res.status(200).json({
+      message: "Xoá người dùng thành công.",
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}, { password: 0 });
+    return res.status(200).json({
+      users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+export const updateUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const updatedUser = req.body; 
+
+    const existingUser = await User.findById(userId);
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "Người dùng không tồn tại",
+      });
+    }
+
+    if (updatedUser.email && updatedUser.email !== existingUser.email) {
+      const emailExist = await User.findOne({ email: updatedUser.email });
+      if (emailExist) {
+        return res.status(400).json({
+          message: "Email đã được sử dụng",
+        });
+      }
+    }
+
+    existingUser.email = updatedUser.email || existingUser.email;
+
+    const savedUser = await existingUser.save();
+
+    //không thể thay đổi user và tạm thời có cả password
+    savedUser.password = undefined; 
+    savedUser.userName = undefined; 
+
+    return res.status(200).json({
+      message: "Cập nhật thông tin người dùng thành công",
+      user: savedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+
 
