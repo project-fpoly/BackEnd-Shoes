@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     email: {
-        type: String, 
+        type: String,
         required: true
     },
     password: {
@@ -37,6 +37,6 @@ const userSchema = new mongoose.Schema({
     phoneNumbers: {
         type: Array
     }
-}, { versionKey: false, timestamps: true})
+}, { versionKey: false, timestamps: true })
 
 export default mongoose.model('User', userSchema)
