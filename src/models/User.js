@@ -21,6 +21,18 @@ const userSchema = new mongoose.Schema(
     avt: {
       type: String,
     },
+    deliveryAddress: {
+      type: Array,
+    },
+    gender: {
+      type: String,
+    },
+    dateOfBirth: {
+      type: String,
+    },
+    phoneNumbers: {
+      type: Array,
+    },
   },
   { versionKey: false, timestamps: true }
 );
