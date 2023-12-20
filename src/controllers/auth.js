@@ -1,4 +1,8 @@
-import { signInValidator, signUpValidator, updateValidator } from "../validations/user";
+import {
+  signInValidator,
+  signUpValidator,
+  updateValidator,
+} from "../validations/user";
 import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import dotenv from "dotenv";
@@ -131,46 +135,77 @@ export const updateUser = async (req, res) => {
     }
 
     existingUser.avt = updatedUser.avt || existingUser.avt;
-    existingUser.deliveryAddress =
-      updatedUser.deliveryAddress || existingUser.deliveryAddress;
     existingUser.gender = updatedUser.gender || existingUser.gender;
-    existingUser.dateOfBirth =
-      updatedUser.dateOfBirth || existingUser.dateOfBirth;
+    existingUser.dateOfBirth =updatedUser.dateOfBirth || existingUser.dateOfBirth;
 
-    // Kiểm tra số địa chỉ giao hàng
-    if (
-      updatedUser.deliveryAddresses &&
-      updatedUser.deliveryAddresses.length > 0
-    ) {
-      if (updatedUser.deliveryAddresses.length > 3) {
+    //deliveryAddress
+      if (updatedUser.deliveryAddress) {
+        if (updatedUser.deliveryAddress.length > 3) {
+          return res.status(400).json({
+            message: "Chỉ được phép cung cấp tối đa 3 địa chỉ",
+          });
+        }
+        const uniqueAddresses = [...new Set(updatedUser.deliveryAddress)];
+        if (uniqueAddresses.length !== updatedUser.deliveryAddress.length) {
+          return res.status(400).json({
+            message: "Địa chỉ không được trùng lặp",
+          });
+        }
+        for (const address of uniqueAddresses) {
+          const addressExist = await User.findOne({
+            "deliveryAddress.address": address,
+            _id: { $ne: userId },
+          });
+          if (addressExist) {
+            return res.status(400).json({
+              message: `Địa chỉ ${address} đã được sử dụng bởi người dùng khác`,
+            });
+          }
+        }
+        existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
+          address,
+        }));
+      }
+    //email
+    if (updatedUser.email && updatedUser.email !== existingUser.email) {
+      const emailExist = await User.findOne({
+        email: updatedUser.email,
+        _id: { $ne: userId },
+      });
+      if (emailExist) {
         return res.status(400).json({
-          message: "Chỉ được phép cung cấp tối đa 3 địa chỉ giao hàng",
+          message: `Email ${updatedUser.email} đã được sử dụng bởi người dùng khác`,
         });
       }
+      existingUser.email = updatedUser.email;
+    }
 
-      const uniqueAddresses = [
-        ...new Set(updatedUser.deliveryAddresses),
-      ];
-      if (uniqueAddresses.length !== updatedUser.deliveryAddresses.length) {
+    //phone
+    if (updatedUser.phoneNumbers) {
+      if (updatedUser.phoneNumbers.length > 3) {
         return res.status(400).json({
-          message: "Địa chỉ giao hàng không được trùng lặp",
+          message: "Chỉ được phép cung cấp tối đa 3 số điện thoại",
         });
       }
-
-      for (const address of uniqueAddresses) {
-        const addressExist = await User.findOne({
-          "deliveryAddresses.address": address,
+      const uniquePhoneNumbers = [...new Set(updatedUser.phoneNumbers)];
+      if (uniquePhoneNumbers.length !== updatedUser.phoneNumbers.length) {
+        return res.status(400).json({
+          message: "Số điện thoại không được trùng lặp",
+        });
+      }
+      for (const phoneNumber of uniquePhoneNumbers) {
+        const phoneExist = await User.findOne({
+          "phoneNumbers.phoneNumber": phoneNumber,
           _id: { $ne: userId },
         });
-        if (addressExist) {
+        if (phoneExist) {
           return res.status(400).json({
-            message: `Địa chỉ giao hàng ${address} đã được sử dụng bởi người dùng khác`,
+            message: `Số điện thoại ${phoneNumber} đã được sử dụng bởi người dùng khác`,
           });
         }
       }
-
-      existingUser.deliveryAddresses = uniqueAddresses.map((address) => ({
-        address,
+      existingUser.phoneNumbers = uniquePhoneNumbers.map((phoneNumber) => ({
+        phoneNumber,
       }));
     }
 
