@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  UpdateBill,
   createBill,
   deleteBill,
   getAllBill,
