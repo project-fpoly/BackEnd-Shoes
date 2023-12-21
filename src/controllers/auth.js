@@ -60,7 +60,7 @@ export const signIn = async (req, res) => {
         message: "Password không đúng, vui lòng kiểm tra lại!",
       });
     }
-    const accessToken = jwt.sign({  _id: user._id }, SECRET_CODE, {
+    const accessToken = jwt.sign({ _id: user._id }, SECRET_CODE, {
       expiresIn: "1d",
     });
     user.password = undefined;
@@ -76,4 +76,3 @@ export const signIn = async (req, res) => {
     });
   }
 };
-
