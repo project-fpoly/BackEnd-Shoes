@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    resetToken: String,
+    resetTokenExpiry: Date,
     role: {
         type: String,
         default: "member"
@@ -20,6 +22,22 @@ const userSchema = new mongoose.Schema({
     ,
     avt: {
         type: String
+    }
+    ,
+    deliveryAddress: {
+        type: Array
+    }
+    ,
+    gender: {
+        type: String
+    }
+    ,
+    dateOfBirth: {
+        type: String
+    }
+    ,
+    phoneNumbers: {
+        type: Array
     }
 }, { versionKey: false, timestamps: true})
 
