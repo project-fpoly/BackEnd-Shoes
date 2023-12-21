@@ -93,7 +93,7 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetToken = crypto.randomBytes(50).toString("hex");
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
     user.resetToken = resetToken;
@@ -145,7 +145,7 @@ export const resetPassword = async (req, res) => {
       resetToken: token,
       resetTokenExpiry: { $gt: Date.now() },
     });
-
+    console.log(user);
     if (!user) {
       return res.status(400).json({
         message: "Token không hợp lệ hoặc đã hết hạn.",
