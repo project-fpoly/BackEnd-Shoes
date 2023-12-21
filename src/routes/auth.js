@@ -11,6 +11,7 @@ routerAuth.put("/users/:userId",updateUser);
 //chỉ admin mới có quyền xoá
 routerAuth.delete("/users/:userId",checkPermission, deleteUser);
 
+
 routerAuth.post("/forgot-password", forgotPassword);
 routerAuth.post("/reset-password",resetPassword);
 export default routerAuth
