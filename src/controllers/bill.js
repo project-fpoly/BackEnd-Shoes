@@ -65,4 +65,4 @@ export const deleteBill = async (req, res) => {
   }
 };
 
-export const UpdateBill = async (req, res) => {};
+export const updateBill = async (req, res) => {};
