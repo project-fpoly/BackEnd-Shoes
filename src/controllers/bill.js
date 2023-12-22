@@ -13,7 +13,7 @@ export const getBillById = async (req, res) => {
 
 export const getAllBill = async (req, res) => {
   try {
-    const bills = await Bill.findAll();
+    const bills = await Bill.find();
     if (!bills) throw new Error("ALL bill not found");
     return res.status(200).json({ data: bills });
   } catch (error) {
