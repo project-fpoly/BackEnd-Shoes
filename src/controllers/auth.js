@@ -1,8 +1,4 @@
-import {
-  signInValidator,
-  signUpValidator,
-  updateValidator,
-} from "../validations/user";
+import { signInValidator, signUpValidator } from "../validations/user";
 import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import dotenv from "dotenv";
@@ -52,10 +48,10 @@ export const signIn = async (req, res) => {
         message: errors,
       });
     }
-    const user = await User.findOne({ email: req.body.email });
+    const user = await User.findOne({ userName: req.body.userName });
     if (!user) {
       return res.status(404).json({
-        message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
+        message: "User Name này chưa đăng ký, bạn có muốn đăng ký không?",
       });
     }
     const isMatch = await bcryptjs.compare(req.body.password, user.password);
@@ -72,6 +68,94 @@ export const signIn = async (req, res) => {
       message: "Đăng nhập thành công!",
       accessToken,
       user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Người dùng không tồn tại.",
+      });
+    }
+
+    const resetToken = crypto.randomBytes(50).toString("hex");
+    const resetTokenExpiry = Date.now() + 3600000; // 1 hour
+
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = resetTokenExpiry;
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: GMAIL_USER,
+        pass: GMAIL_PASS,
+      },
+    });
+
+    const origin = req.headers.origin || PORT_CLIENT;
+    const resetPasswordLink = `${origin}/reset-password?token=${resetToken}&email=${email}`;
+
+    const mailOptions = {
+      from: GMAIL_USER,
+      to: email,
+      subject: "Reset Password",
+      text: `Click on the following link to reset your password: ${resetPasswordLink}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return res.status(500).json({
+          message: "Gửi email thất bại."+error,
+        });
+      }
+      return res.status(200).json({
+        message: "Đã gửi email với hướng dẫn reset mật khẩu.",
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+
+    const user = await User.findOne({
+      email,
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+    console.log(user);
+    if (!user) {
+      return res.status(400).json({
+        message: "Token không hợp lệ hoặc đã hết hạn.",
+      });
+    }
+
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Mật khẩu đã được cập nhật.",
     });
   } catch (error) {
     return res.status(500).json({

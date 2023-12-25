@@ -10,18 +10,6 @@ export const signUpValidator = Joi.object({
 
 
 export const signInValidator = Joi.object({
-    email: Joi.string().required().email(),
+    userName: Joi.string().required().min(6),
     password: Joi.string().required().min(6).max(255),
 })
-export const updateValidator = Joi.object({
-    deliveryAddress: Joi.array().required().items(Joi.string().min(3).max(255)).max(3),
-    email: Joi.string().required().email(),
-    gender: Joi.string().required().valid("male", "female", "other"),
-    dateOfBirth: Joi.date().required().iso(),
-    avt: Joi.string().required(),
-    phoneNumbers: Joi.array()
-      .items(Joi.string().min(10).max(11))
-      .max(3)
-      .required()
-      .unique(),
-  });
