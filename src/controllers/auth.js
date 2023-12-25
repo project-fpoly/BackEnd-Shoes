@@ -48,10 +48,10 @@ export const signIn = async (req, res) => {
         message: errors,
       });
     }
-    const user = await User.findOne({ email: req.body.email });
+    const user = await User.findOne({ userName: req.body.userName });
     if (!user) {
       return res.status(404).json({
-        message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
+        message: "User Name này chưa đăng ký, bạn có muốn đăng ký không?",
       });
     }
     const isMatch = await bcryptjs.compare(req.body.password, user.password);

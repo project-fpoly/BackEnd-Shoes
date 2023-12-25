@@ -10,6 +10,6 @@ export const signUpValidator = Joi.object({
 
 
 export const signInValidator = Joi.object({
-    email: Joi.string().required().email(),
+    userName: Joi.string().required().min(6),
     password: Joi.string().required().min(6).max(255),
 })
