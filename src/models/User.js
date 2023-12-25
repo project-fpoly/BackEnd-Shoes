@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     email: {
-        type: String, 
+        type: String,
         required: true
     },
     password: {
@@ -21,6 +21,26 @@ const userSchema = new mongoose.Schema({
     avt: {
         type: String
     }
+<<<<<<< HEAD
 }, { versionKey: false, timestamps: true})
+=======
+    ,
+    deliveryAddress: {
+        type: Array
+    }
+    ,
+    gender: {
+        type: String
+    }
+    ,
+    dateOfBirth: {
+        type: String
+    }
+    ,
+    phoneNumbers: {
+        type: Array
+    }
+}, { versionKey: false, timestamps: true })
+>>>>>>> da9b94690d6446b27254ff3856f25d7000424232
 
 export default mongoose.model('User', userSchema)
