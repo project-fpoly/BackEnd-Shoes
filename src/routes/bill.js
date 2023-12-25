@@ -15,4 +15,4 @@ routerBill.get("/getAllBill", getAllBill);
 routerBill.delete("/deleteBill/:id", deleteBill);
 routerBill.patch("/updateBill", updateBill);
 
-export default routerAuth;
+export default routerBill;
