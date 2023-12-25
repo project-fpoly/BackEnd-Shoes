@@ -7,7 +7,7 @@ const cartSchema = mongoose.Schema(
         quantity: { type: Number, required: true },
         image: { type: String, required: true },
         price: { type: Number, required: true },
-        discount: { type: String, required: true },
+        discount: { type: String },
         shoes: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Shoes",
@@ -28,7 +28,7 @@ const cartSchema = mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     isPaid: { type: Boolean, default: false },
     paidAt: { type: Date },
-    isDelivered: { type: Boolean, default: false },
+    isDelivered: { type: String, default: "Chờ xác nhận" },
     deliveredAt: { type: Date },
   },
   {
