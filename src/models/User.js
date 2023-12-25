@@ -1,46 +1,41 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     userName: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     email: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     password: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     role: {
-        type: String,
-        default: "member"
-    }
-    ,
+      type: String,
+      default: "member",
+    },
     avt: {
         type: String
     }
-<<<<<<< HEAD
-}, { versionKey: false, timestamps: true})
-=======
+<<<<<<<<< Temporary merge branch 1
     ,
     deliveryAddress: {
-        type: Array
-    }
-    ,
+      type: Array,
+    },
     gender: {
-        type: String
-    }
-    ,
+      type: String,
+    },
     dateOfBirth: {
-        type: String
-    }
-    ,
+      type: String,
+    },
     phoneNumbers: {
         type: Array
     }
 }, { versionKey: false, timestamps: true })
->>>>>>> da9b94690d6446b27254ff3856f25d7000424232
-
-export default mongoose.model('User', userSchema)
+=========
+}, { versionKey: false, timestamps: true})
+>>>>>>>>> Temporary merge branch 2

@@ -1,7 +1,10 @@
 import express from "express";
 import routerAuth from "./auth";
-import routerBill from "./bill";
+<<<<<<<<< Temporary merge branch 1
 import routerCategory from "./category";
+=========
+import routerBill from "./bill";
+>>>>>>>>> Temporary merge branch 2
 
 const router = express.Router();
 router.use("/auth", routerAuth);
