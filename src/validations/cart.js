@@ -18,10 +18,7 @@ export const cartItemSchema = Joi.object({
     "number.empty": "Giá không được để trống",
     "any.required": "Giá là trường bắt buộc",
   }),
-  shoes: Joi.string().required().messages({
-    "string.empty": "Tên giày không được để trống",
-    "any.required": "Tên giày là trường bắt buộc",
-  }),
+  shoes: Joi.required(),
 });
 
 export const shippingAddressSchema = Joi.object({
@@ -50,7 +47,7 @@ export const cartSchema = Joi.object({
   itemsPrice: Joi.number().required(),
   shippingPrice: Joi.number().required(),
   totalPrice: Joi.number().required(),
-  user: Joi.string().required(),
+  user: Joi.required(),
   isPaid: Joi.boolean().default(false),
   paidAt: Joi.date(),
   isDelivered: Joi.string()

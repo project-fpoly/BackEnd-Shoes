@@ -50,12 +50,12 @@ const getAllCarts = async (req, res) => {
 
     if (carts.length === 0) {
       return res.status(404).json({
-        message: "Không tìm thấy giỏ hàng nào",
+        message: "Không tìm thấy đơn hàng",
       });
     }
 
     return res.status(200).json({
-      message: `Tìm thấy ${carts.length} giỏ hàng`,
+      message: `Có ${carts.length} đơn hàng`,
       carts: carts,
       currentPage: page,
       totalPages: Math.ceil(totalCount / limit),
