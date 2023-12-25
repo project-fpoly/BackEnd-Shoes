@@ -9,10 +9,10 @@ import {
 
 const routerBill = Router();
 
-routerBill.post("/createBill", createBill);
-routerBill.get("/getBillById", getBillById);
-routerBill.get("/getAllBill", getAllBill);
-routerBill.delete("/deleteBill/:id", deleteBill);
-routerBill.patch("/updateBill", updateBill);
+routerBill.post("/", createBill);
+routerBill.get("/:id", getBillById);
+routerBill.get("/", getAllBill);
+routerBill.delete("/:id", deleteBill);
+routerBill.patch("/:id", updateBill);
 
 export default routerBill;
