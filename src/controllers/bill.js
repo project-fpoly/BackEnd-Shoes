@@ -22,15 +22,13 @@ export const getAllBill = async (req, res) => {
 };
 export const createBill = async (req, res) => {
   try {
-    const { error } = billValidator.validate(req.body, { abortEarly: false });
-    if (error) {
-      const errors = error.details.map((message) => ({ message }));
-      return res.status(400).json({ errors });
-    }
+    // const { error } = billValidator.validate(req.body, { abortEarly: false });
+    // if (error) {
+    //   const errors = error.details.map((message) => ({ message }));
+    //   return res.status(400).json({ errors });
+    // }
     const bill = await Bill.create(req.body);
-    return res.status(200).json({
-      bill,
-    });
+    return res.status(200).json(bill);
   } catch (error) {
     return res.status(400).json({
       message: "Thêm bill không thành công",
@@ -42,6 +40,7 @@ export const createBill = async (req, res) => {
 export const deleteBill = async (req, res) => {
   try {
     const id = req.params.id;
+    const { error } = billValidator.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((message) => ({ message }));
       return res.status(400).json({ errors });

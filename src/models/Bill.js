@@ -1,47 +1,56 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
 const BillSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.ObjectId,
-      required: true,
-      ref: "User",
-    },
-    shoeId: [
+    billItem: [
       {
-        type: mongoose.Schema.ObjectId,
-        required: true,
-        ref: "Shoe",
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        shoes: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Shoes",
+            required: true,
+          },
+        ],
+        createdAt: {
+          type: Date,
+          default: Date.now(),
+        },
+        paymentMethod: {
+          type: String,
+          required: true,
+        },
+        paid: {
+          type: String,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+        dateBuy: {
+          type: Date,
+        },
+        images: [
+          {
+            type: String,
+            default: null,
+          },
+        ],
+        addRess: {
+          fullname: { type: String, required: true },
+          address: { type: String, required: true },
+          city: { type: String, required: true },
+          phone: { type: Number, required: true },
+        },
       },
     ],
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    payment_method: {
-      type: String,
-    },
-    totalPrice: {
-      type: Number,
-      required: true,
-    },
-    quantity: {
-      type: Number,
-    },
-    image: {
-      type: String,
-    },
-    date_buy: {
-      type: Date,
-    },
-    address: {
-      type: String,
-    },
-    color: {
-      type: String,
-    },
   },
-  { versionKey: false, timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
 export default mongoose.model("Bill", BillSchema);

@@ -13,7 +13,3 @@ router.use("/categories", routerCategory);
 router.use("/order", routerCart);
 
 export default router;
-
-
-
-
