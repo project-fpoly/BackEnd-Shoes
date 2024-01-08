@@ -5,7 +5,7 @@ export const cartItemSchema = Joi.object({
     "string.empty": "Tên không được để trống",
     "any.required": "Tên là trường bắt buộc",
   }),
-  quantity: Joi.number().min(0).max(10).required().messages({
+  quantity: Joi.number().min(1).max(10).required().messages({
     "number.empty": "Số lượng không được để trống",
     "number.min": "Số lượng tối thiểu là {#limit}",
     "number.max": "Số lượng tối đa là {#limit}",

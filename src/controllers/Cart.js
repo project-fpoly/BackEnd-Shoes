@@ -1,5 +1,12 @@
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 import Cart from "../models/Cart";
 import { cartSchema } from "../validations/cart";
+
+dotenv.config();
+const { SECRET_CODE } = process.env;
+
+// Tạo một giỏ hàng mới
 const createCart = async (req, res) => {
   try {
     const {
@@ -9,138 +16,153 @@ const createCart = async (req, res) => {
       itemsPrice,
       shippingPrice,
       totalPrice,
-      user,
     } = req.body;
-    const { error, value } = cartSchema.validate({
+
+    // Lấy ID của người dùng từ access token
+    const userId = req.user._id;
+    console.log(userId);
+    // Kiểm tra hợp lệ dữ liệu đầu vào
+    const { error } = cartSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Lưu giỏ hàng vào cơ sở dữ liệu với userId
+    const cart = new Cart({
       cartItem,
       shippingAddress,
       paymentMethod,
       itemsPrice,
       shippingPrice,
       totalPrice,
-      user,
+      user: userId,
     });
-    if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
-    }
-    const newCart = new Cart(value);
 
-    const savedCart = await newCart.save();
-
-    return res.status(200).json(savedCart);
-  } catch (e) {
-    return res.status(500).json({
-      message: "Lỗi máy chủ ",
-      error: e.message,
-    });
+    const savedCart = await cart.save();
+    res.json(savedCart);
+    console.log(savedCart);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// Lấy tất cả giỏ hàng của một người dùng
 const getAllCarts = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; // Trang hiện tại, mặc định là 1
-    const limit = parseInt(req.query.limit) || 10; // Giới hạn số lượng bản ghi trên mỗi trang, mặc định là 10
+    const { _id: userId } = req.user;
+    const { page = 1, limit = 10 } = req.query;
 
-    const skipCount = (page - 1) * limit; // Số bản ghi cần bỏ qua
+    // Đếm tổng số giỏ hàng
+    const totalCarts = await Cart.countDocuments({ user: userId });
 
-    const totalCount = await Cart.countDocuments(); // Tổng số bản ghi trong collection
+    // Lấy giỏ hàng theo trang và số lượng giới hạn
+    const carts = await Cart.find({ user: userId })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-    const carts = await Cart.find().skip(skipCount).limit(limit).exec();
-
-    if (carts.length === 0) {
-      return res.status(404).json({
-        message: "Không tìm thấy đơn hàng",
-      });
-    }
-
-    return res.status(200).json({
-      message: `Có ${carts.length} đơn hàng`,
-      carts: carts,
-      currentPage: page,
-      totalPages: Math.ceil(totalCount / limit),
+    res.json({
+      carts,
+      pagination: {
+        totalCarts,
+        totalPages: Math.ceil(totalCarts / limit),
+        currentPage: parseInt(page),
+        limit: parseInt(limit),
+      },
     });
-  } catch (e) {
-    return res.status(500).json({
-      message: "Lỗi máy chủ",
-      error: e.message,
-    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// Lấy một giỏ hàng theo ID
 const getCartById = async (req, res) => {
   try {
-    const cartId = req.params.id;
+    const { _id: userId } = req.user;
+    const { id: cartId } = req.params;
 
-    const cart = await Cart.findById(cartId);
-
+    const cart = await Cart.findOne({ _id: cartId, user: userId });
     if (!cart) {
-      return res.status(404).json({
-        message: "Không tồn tại đơn hàng này",
-      });
+      return res.status(404).json({ error: "Cart not found" });
     }
 
-    return res.status(200).json(cart);
-  } catch (e) {
-    return res.status(500).json({
-      message: "Lỗi máy chủ ",
-      error: e.message,
-    });
+    res.json(cart);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
+// Cập nhật một giỏ hàng theo ID
 const updateCart = async (req, res) => {
   try {
-    const cartId = req.params.id;
-    const updateData = req.body;
+    const { _id: userId } = req.user;
+    const { id: cartId } = req.params;
+    const updatedCartData = req.body;
 
-    const { error, value } = cartSchema.validate(updateData);
-
+    // Kiểm tra hợp lệ dữ liệu đầu vào
+    const { error } = cartSchema.validate(updatedCartData);
     if (error) {
-      return res.status(400).json({
-        message: error.details[0].message,
-      });
+      return res.status(400).json({ error: error.details[0].message });
     }
 
-    const updatedCart = await Cart.findByIdAndUpdate(cartId, value, {
-      new: true,
-    });
+    const updatedCart = await Cart.findByIdAndUpdate(
+      { _id: cartId, user: userId },
+      updatedCartData,
+      { new: true }
+    );
 
     if (!updatedCart) {
-      return res.status(404).json({
-        message: "Không tồn tại đơn hàng này",
-      });
+      return res.status(404).json({ error: "Cart not found" });
     }
 
-    return res.status(200).json(updatedCart);
-  } catch (e) {
-    return res.status(500).json({
-      message: "Lỗi máy chủ",
-      error: e.message,
-    });
+    res.json(updatedCart);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
+// Xóa một giỏ hàng theo ID
 const deleteCart = async (req, res) => {
   try {
-    const cartId = req.params.id;
+    const { _id: userId } = req.user;
+    const { id: cartId } = req.params;
 
-    const deletedCart = await Cart.findByIdAndDelete(cartId);
+    const deletedCart = await Cart.findOneAndDelete({
+      _id: cartId,
+      user: userId,
+    });
 
     if (!deletedCart) {
-      return res.status(404).json({
-        message: "Không tồn tại đơn hàng này",
-      });
+      return res.status(404).json({ error: "Cart not found" });
     }
 
-    return res.status(200).json({
-      message: "Xóa đơn hàng thành công",
-    });
-  } catch (e) {
-    return res.status(500).json({
-      message: "Lỗi máy chủ",
-      error: e.message,
-    });
+    res.json({ message: "Cart deleted", deletedCart });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-export { createCart, getCartById, updateCart, deleteCart, getAllCarts };
+// Middleware xác thực Mã thông báo
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, SECRET_CODE, (err, decodedToken) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+    req.user = decodedToken;
+    next();
+  });
+}
+
+export {
+  createCart,
+  getCartById,
+  updateCart,
+  deleteCart,
+  getAllCarts,
+  authenticateToken,
+};
