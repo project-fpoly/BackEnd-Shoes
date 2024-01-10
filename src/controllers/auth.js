@@ -11,7 +11,8 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 dotenv.config();
 
-const { SECRET_CODE,PORT_CLIENT,GMAIL_USER,GMAIL_PASS } = process.env;
+const { SECRET_CODE, PORT_CLIENT, GMAIL_USER, GMAIL_PASS } = process.env;
+
 export const signUp = async (req, res) => {
   try {
     const { error } = signUpValidator.validate(req.body, { abortEarly: false });
@@ -21,10 +22,10 @@ export const signUp = async (req, res) => {
         messages: errors,
       });
     }
-    const userExist = await User.findOne({ userName: req.body.userName });
+    const userExist = await User.findOne({ email: req.body.email });
     if (userExist) {
       return res.status(400).json({
-        message: "User Name này đã được đăng ký, bạn có muốn đăng nhập không?",
+        message: "Email này đã được đăng ký, bạn có muốn đăng nhập không?",
       });
     }
     const hashPassword = await bcryptjs.hash(req.body.password, 10);
@@ -54,10 +55,10 @@ export const signIn = async (req, res) => {
         message: errors,
       });
     }
-    const user = await User.findOne({ userName: req.body.userName });
+    const user = await User.findOne({ email: req.body.email });
     if (!user) {
       return res.status(404).json({
-        message: "User Name này chưa đăng ký, bạn có muốn đăng ký không?",
+        message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
       });
     }
     const isMatch = await bcryptjs.compare(req.body.password, user.password);
@@ -94,6 +95,7 @@ export const forgotPassword = async (req, res) => {
     }
 
     const resetToken = crypto.randomBytes(50).toString("hex");
+
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
     user.resetToken = resetToken;
@@ -121,7 +123,7 @@ export const forgotPassword = async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         return res.status(500).json({
-          message: "Gửi email thất bại."+error,
+          message: "Gửi email thất bại." + error,
         });
       }
       return res.status(200).json({
@@ -226,36 +228,37 @@ export const updateUser = async (req, res) => {
 
     existingUser.avt = updatedUser.avt || existingUser.avt;
     existingUser.gender = updatedUser.gender || existingUser.gender;
-    existingUser.dateOfBirth =updatedUser.dateOfBirth || existingUser.dateOfBirth;
+    existingUser.dateOfBirth =
+      updatedUser.dateOfBirth || existingUser.dateOfBirth;
 
     //deliveryAddress
-      if (updatedUser.deliveryAddress) {
-        if (updatedUser.deliveryAddress.length > 3) {
-          return res.status(400).json({
-            message: "Chỉ được phép cung cấp tối đa 3 địa chỉ",
-          });
-        }
-        const uniqueAddresses = [...new Set(updatedUser.deliveryAddress)];
-        if (uniqueAddresses.length !== updatedUser.deliveryAddress.length) {
-          return res.status(400).json({
-            message: "Địa chỉ không được trùng lặp",
-          });
-        }
-        for (const address of uniqueAddresses) {
-          const addressExist = await User.findOne({
-            "deliveryAddress.address": address,
-            _id: { $ne: userId },
-          });
-          if (addressExist) {
-            return res.status(400).json({
-              message: `Địa chỉ ${address} đã được sử dụng bởi người dùng khác`,
-            });
-          }
-        }
-        existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
-          address,
-        }));
+    if (updatedUser.deliveryAddress) {
+      if (updatedUser.deliveryAddress.length > 3) {
+        return res.status(400).json({
+          message: "Chỉ được phép cung cấp tối đa 3 địa chỉ",
+        });
       }
+      const uniqueAddresses = [...new Set(updatedUser.deliveryAddress)];
+      if (uniqueAddresses.length !== updatedUser.deliveryAddress.length) {
+        return res.status(400).json({
+          message: "Địa chỉ không được trùng lặp",
+        });
+      }
+      for (const address of uniqueAddresses) {
+        const addressExist = await User.findOne({
+          "deliveryAddress.address": address,
+          _id: { $ne: userId },
+        });
+        if (addressExist) {
+          return res.status(400).json({
+            message: `Địa chỉ ${address} đã được sử dụng bởi người dùng khác`,
+          });
+        }
+      }
+      existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
+        address,
+      }));
+    }
     //email
     if (updatedUser.email && updatedUser.email !== existingUser.email) {
       const emailExist = await User.findOne({
