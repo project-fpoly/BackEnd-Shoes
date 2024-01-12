@@ -2,9 +2,10 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import Cart from "../models/Cart";
 import { cartSchema } from "../validations/cart";
-
+import nodemailer from "nodemailer";
+import User from "../models/User";
 dotenv.config();
-const { SECRET_CODE } = process.env;
+const { SECRET_CODE, GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
 // Tạo một giỏ hàng mới
 const createCart = async (req, res) => {
@@ -20,7 +21,6 @@ const createCart = async (req, res) => {
 
     // Lấy ID của người dùng từ access token
     const userId = req.user._id;
-    console.log(userId);
     // Kiểm tra hợp lệ dữ liệu đầu vào
     const { error } = cartSchema.validate(req.body);
     if (error) {
@@ -37,10 +37,32 @@ const createCart = async (req, res) => {
       totalPrice,
       user: userId,
     });
-
     const savedCart = await cart.save();
-    res.json(savedCart);
-    console.log(savedCart);
+    res.json({ message: "Add cart complete", savedCart });
+    const user = await User.findById(userId);
+    const userEmail = user.email;
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: GMAIL_ADMIN,
+        pass: PASS_ADMIN,
+      },
+    });
+
+    const mailOptions = {
+      from: GMAIL_ADMIN,
+      to: userEmail,
+      subject: "Xác nhận đơn hàng",
+      text: "Đơn hàng của bạn đã được đặt thành công.",
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Gửi email thất bại:", error);
+      } else {
+        console.log("Gửi email thành công:", info.response);
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -114,7 +136,7 @@ const updateCart = async (req, res) => {
       return res.status(404).json({ error: "Cart not found" });
     }
 
-    res.json(updatedCart);
+    res.json({ message: "Update cart complete", updatedCart });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
