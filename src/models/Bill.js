@@ -9,43 +9,23 @@ const BillSchema = new mongoose.Schema(
           ref: "User",
           required: true,
         },
-        shoes: [
+        cart: [
           {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Shoes",
+            ref: "Cart",
             required: true,
           },
         ],
+        paymentMethod: {
+          type: String,
+        },
         createdAt: {
           type: Date,
           default: Date.now(),
         },
-        paymentMethod: {
+        status: {
           type: String,
-          required: true,
-        },
-        paid: {
-          type: String,
-          required: true,
-        },
-        quantity: {
-          type: Number,
-          required: true,
-        },
-        dateBuy: {
-          type: Date,
-        },
-        images: [
-          {
-            type: String,
-            default: null,
-          },
-        ],
-        addRess: {
-          fullname: { type: String, required: true },
-          address: { type: String, required: true },
-          city: { type: String, required: true },
-          phone: { type: Number, required: true },
+          default: "pending",
         },
       },
     ],
