@@ -1,7 +1,7 @@
 import Product from "../models/Product";
 import productValidator from "../validations/Product";
 import multer from "multer";
-
+import Category from "../models/Category";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -24,7 +24,7 @@ const addProduct = async (req, res) => {
       name,
       description,
       categoryId,
-      brandId,
+  
       price,
       sale,
       discount,
@@ -73,7 +73,7 @@ const addProduct = async (req, res) => {
       name,
       description,
       categoryId,
-      brandId,
+   
       price,
       sale,
       discount,
@@ -101,9 +101,6 @@ const addProduct = async (req, res) => {
       Category.findByIdAndUpdate(categoryId, {
         $push: { products: saveProduct._id },
       }),
-      Brand.findByIdAndUpdate(brandId, {
-        $push: { products: saveProduct._id },
-      }),
     ]);
 
     res.status(200).json({
@@ -124,7 +121,6 @@ const getAllProduct = async (req, res) => {
   const PAGE_SIZE = 12;
   const page = parseInt(req.query.page);
   const category = req.query.category;
-  const brand = req.query.brand;
   const sort = req.query.sort;
   const filter = req.query.filter;
   const color = req.query.color;
@@ -133,6 +129,8 @@ const getAllProduct = async (req, res) => {
   const isPublished = req.query.isPublished;
 
   try {
+   
+
     const skip = (page - 1) * PAGE_SIZE;
 
     let query = {};
@@ -140,11 +138,6 @@ const getAllProduct = async (req, res) => {
     if (category) {
       query.categoryId = category;
     }
-
-    if (brand) {
-      query.brandId = brand;
-    }
-
     if (filter) {
       query.name = { $regex: filter, $options: "i" };
     }
@@ -167,13 +160,20 @@ const getAllProduct = async (req, res) => {
 
     const products = await Product.find(query)
       .populate("categoryId", "name")
-      .populate("brandId", "name")
       .sort(sort)
       .skip(skip)
       .limit(PAGE_SIZE);
 
     const total = await Product.countDocuments(query);
     const last_page = Math.ceil(total / PAGE_SIZE);
+
+    if (products.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sản phẩm",
+      });
+      return;
+    }
 
     res.status(200).json({
       success: true,
@@ -190,10 +190,9 @@ const getAllProduct = async (req, res) => {
     });
   }
 };
-
 const getDetailProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("category");
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({

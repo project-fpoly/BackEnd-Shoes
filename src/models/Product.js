@@ -26,11 +26,6 @@ const ProductSchema = new Schema({
     ref: "Category",
     required: false,
   },
-  brandId: {
-    type: Schema.Types.ObjectId,
-    ref: "Brand",
-    required: false,
-  },
   price: {
     type: Number,
     required: true,
