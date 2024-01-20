@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import User from "../models/User";
+import User from "../models/User.js";
 dotenv.config();
 
 const { SECRET_CODE } = process.env;
@@ -27,6 +27,9 @@ export const checkPermission = async (req, res, next) => {
         message: "Bạn không có quyền làm việc này!",
       });
     }
+    //add user = infor cua user
+    req.user = user;
+    console.log(req.user)
     next();
   } catch (error) {
     return res.status(400).json({
