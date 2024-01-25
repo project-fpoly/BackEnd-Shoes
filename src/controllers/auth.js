@@ -27,6 +27,12 @@ export const signUp = async (req, res) => {
       }
 
       const user = await User.findOne({ userName: req.body.userName });
+      const email = await User.findOne({ email: req.body.email });
+      if(email){
+        return res.status(400).json({
+          message: 'Email đã tồn tại.',
+      });
+      }
       if (!user) {
           // Nếu user không tồn tại, tạo mới user
           const hashPassword = await bcryptjs.hash(req.body.password, 10);
@@ -75,7 +81,7 @@ export const signUp = async (req, res) => {
           });
 
       } else {
-          return res.status(409).json({
+          return res.status(400).json({
               message: 'User Name đã tồn tại.',
           });
       }
