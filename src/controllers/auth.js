@@ -266,6 +266,35 @@ export const deleteUser = async (req, res) => {
     });
   }
 };
+export const deleteMoreUsers = async (req, res) => {
+  try {
+    const userIdsToDelete = req.body.userIds;
+    if (!userIdsToDelete || userIdsToDelete.length === 0) {
+      return res.status(400).json({
+        message: 'Vui lòng cung cấp ít nhất một ID người dùng để xoá.',
+      });
+    }
+
+    const deletedUsers = await User.deleteMany({ _id: { $in: userIdsToDelete } });
+
+    if (deletedUsers.deletedCount === 0) {
+      return res.status(404).json({
+        message: 'Không tìm thấy người dùng nào để xoá.',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Xoá người dùng thành công.',
+      deletedCount: deletedUsers.deletedCount,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({}, { password: 0 });
