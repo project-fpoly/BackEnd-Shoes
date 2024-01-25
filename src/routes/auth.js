@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { deleteUser, forgotPassword, getAllUsers, resetPassword, signIn, signUp, updateUser, verifyEmail } from "../controllers/auth"
+import { deleteUser, forgotPassword, getAllUsers, getOneUser, resetPassword, signIn, signUp, updateUser, verifyEmail } from "../controllers/auth"
 import { checkPermission, checkPermissionManager, checkPermissionMember } from "../middlewares/checkPermission"
 
 const routerAuth = Router()
@@ -14,7 +14,9 @@ routerAuth.put("/users/:userId",checkPermissionManager,updateUser);
 //chỉ admin mới có quyền xoá
 routerAuth.delete("/users/:userId",checkPermission, deleteUser);
 
+routerAuth.get("/users/:userId",checkPermissionMember,getOneUser)
 routerAuth.post("/forgot-password",checkPermissionMember, forgotPassword);
 routerAuth.post("/reset-password",checkPermissionMember,resetPassword);
+
 routerAuth.post("/verify-email",verifyEmail);
 export default routerAuth
