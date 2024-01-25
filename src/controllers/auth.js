@@ -246,18 +246,25 @@ export const resetPassword = async (req, res) => {
 };
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.userId);
-    if (!user) {
-      return res.status(404).json({
-        message: "Không tìm thấy người dùng.",
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(403).json({
+        message: "Bạn chưa đăng nhập!",
       });
     }
+    const decoded = jwt.verify(token, SECRET_CODE);
+    const userId = decoded._id;
+    const deletedUser = await User.findByIdAndDelete(userId);
 
-    user.password = undefined;
-
+    if (!deletedUser) {
+      return res.status(404).json({
+        message: 'Không tìm thấy người dùng.',
+      });
+    }
+    
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
-      user,
+      decoded,
     });
   } catch (error) {
     return res.status(500).json({
