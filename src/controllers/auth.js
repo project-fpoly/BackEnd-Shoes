@@ -12,39 +12,107 @@ import jwt from "jsonwebtoken";
 dotenv.config();
 
 const { SECRET_CODE,PORT_CLIENT,GMAIL_USER,GMAIL_PASS } = process.env;
+const generateVerificationToken = () => {
+  return crypto.randomBytes(3).toString('hex').toUpperCase();
+};
+
 export const signUp = async (req, res) => {
   try {
-    const { error } = signUpValidator.validate(req.body, { abortEarly: false });
-    if (error) {
-      const errors = error.details.map((err) => err.message);
-      return res.status(400).json({
-        messages: errors,
-      });
-    }
-    const userExist = await User.findOne({ userName: req.body.userName });
-    if (userExist) {
-      return res.status(400).json({
-        message: "User Name này đã được đăng ký, bạn có muốn đăng nhập không?",
-      });
-    }
-    const hashPassword = await bcryptjs.hash(req.body.password, 10);
-    const user = await User.create({
-      userName: req.body.userName,
-      email: req.body.email,
-      password: hashPassword,
-    });
-    user.password = undefined;
-    return res.status(200).json({
-      message: "Đăng ký thành công!",
-      user,
-    });
+      const { error } = signUpValidator.validate(req.body, { abortEarly: false });
+      if (error) {
+          const errors = error.details.map((err) => err.message);
+          return res.status(400).json({
+              message: errors,
+          });
+      }
+
+      const user = await User.findOne({ userName: req.body.userName });
+      if (!user) {
+          // Nếu user không tồn tại, tạo mới user
+          const hashPassword = await bcryptjs.hash(req.body.password, 10);
+          const newUser = new User({
+              userName: req.body.userName,
+              email: req.body.email,
+              password: hashPassword,
+          });
+
+          // Tạo mã xác thực và thời gian hết hạn (ví dụ: 30 phút)
+          const verificationToken = generateVerificationToken();
+          const verificationExpiry = new Date();
+          verificationExpiry.setMinutes(verificationExpiry.getMinutes() + 30);
+
+          newUser.emailVerificationToken = verificationToken;
+          newUser.emailVerificationExpiry = verificationExpiry;
+
+          // Lưu thông tin xác thực vào cơ sở dữ liệu
+          await newUser.save();
+
+          // Gửi email chứa mã xác thực đến người dùng
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: GMAIL_USER,
+              pass: GMAIL_PASS,
+            },
+          });
+
+          const mailOptions = {
+              from: 'your-email@example.com',
+              to: newUser.email,
+              subject: 'Xác thực tài khoản',
+              text: `Mã xác thực của bạn là: ${verificationToken}`,
+          };
+
+          transporter.sendMail(mailOptions, (error, info) => {
+              if (error) {
+                  console.error(error);
+                  return res.status(500).json({ error: 'Internal Server Error' });
+              }
+              console.log('Email sent: ' + info.response);
+              res.status(200).json({
+                  message: 'Đăng ký thành công. Kiểm tra email để xác thực tài khoản.',
+              });
+          });
+
+      } else {
+          return res.status(409).json({
+              message: 'User Name đã tồn tại.',
+          });
+      }
   } catch (error) {
-    return res.status(500).json({
-      name: error.name || "Lỗi",
-      message: error.message || "Lỗi server!",
-    });
+      console.error(error);
+      res.status(500).json({
+          name: error.name,
+          message: error.message,
+      });
   }
 };
+export const verifyEmail = async (req, res) => {
+  const { userName, emailVerificationToken } = req.body;
+
+  try {
+      const user = await User.findOne({ userName, emailVerificationToken });
+
+      if (!user) {
+          return res.status(400).json({ error: 'Invalid verification token.' });
+      }
+
+      // Kiểm tra thời hạn xác thực
+      if (user.emailVerificationExpiry < new Date()) {
+          return res.status(400).json({ error: 'Verification token has expired.' });
+      }
+
+      // Đánh dấu email đã được xác thực
+      user.emailVerified = true;
+      await user.save();
+
+      res.json({ message: 'Email verified successfully.' });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 export const signIn = async (req, res) => {
   try {
     const { error } = signInValidator.validate(req.body, { abortEarly: false });
@@ -93,7 +161,7 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const resetToken = crypto.randomBytes(50).toString("hex");
+    const resetToken = crypto.randomBytes(20).toString("hex");
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
     user.resetToken = resetToken;
@@ -145,7 +213,7 @@ export const resetPassword = async (req, res) => {
       resetToken: token,
       resetTokenExpiry: { $gt: Date.now() },
     });
-    console.log(user);
+
     if (!user) {
       return res.status(400).json({
         message: "Token không hợp lệ hoặc đã hết hạn.",
