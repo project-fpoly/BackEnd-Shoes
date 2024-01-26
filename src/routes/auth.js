@@ -16,7 +16,7 @@ routerAuth.delete("/more-users", checkPermission, deleteMoreUsers);
 
 
 routerAuth.delete("/users",checkPermissionMember, deleteUser);
-routerAuth.get("/users/:userId",checkPermissionMember,getOneUser)
+routerAuth.get("/user",checkPermissionMember,getOneUser)
 routerAuth.post("/forgot-password",checkPermissionMember, forgotPassword);
 routerAuth.post("/reset-password",checkPermissionMember,resetPassword);
 

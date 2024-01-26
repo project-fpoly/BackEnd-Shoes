@@ -1,5 +1,5 @@
 import mongoose from "mongoose"
-
+import mongoosePaginate from "mongoose-paginate-v2";
 const userSchema = new mongoose.Schema({
     userName: {
         type: String,
@@ -56,5 +56,5 @@ userSchema.pre('save', function (next) {
     this.lastActivity = new Date();
     next();
 });
-
+userSchema.plugin(mongoosePaginate);
 export default mongoose.model('User', userSchema)
