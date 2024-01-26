@@ -1,17 +1,11 @@
-import {
-  signInValidator,
-  signUpValidator,
-  updateValidator,
-} from "../validations/user";
+import { signInValidator, signUpValidator } from "../validations/user";
 import bcryptjs from "bcryptjs";
-import crypto from "crypto";
-import nodemailer from "nodemailer";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 dotenv.config();
 
-const { SECRET_CODE,PORT_CLIENT,GMAIL_USER,GMAIL_PASS } = process.env;
+const { SECRET_CODE } = process.env;
 export const signUp = async (req, res) => {
   try {
     const { error } = signUpValidator.validate(req.body, { abortEarly: false });
@@ -21,10 +15,10 @@ export const signUp = async (req, res) => {
         messages: errors,
       });
     }
-    const userExist = await User.findOne({ userName: req.body.userName });
+    const userExist = await User.findOne({ email: req.body.email });
     if (userExist) {
       return res.status(400).json({
-        message: "User Name này đã được đăng ký, bạn có muốn đăng nhập không?",
+        message: "Email này đã được đăng ký, bạn có muốn đăng nhập không?",
       });
     }
     const hashPassword = await bcryptjs.hash(req.body.password, 10);
@@ -93,7 +87,7 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetToken = crypto.randomBytes(50).toString("hex");
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
     user.resetToken = resetToken;
@@ -145,7 +139,7 @@ export const resetPassword = async (req, res) => {
       resetToken: token,
       resetTokenExpiry: { $gt: Date.now() },
     });
-
+    console.log(user);
     if (!user) {
       return res.status(400).json({
         message: "Token không hợp lệ hoặc đã hết hạn.",
