@@ -2,8 +2,8 @@ import mongoose from "mongoose"
 import mongoosePaginate from "mongoose-paginate-v2";
 const userSchema = new mongoose.Schema({
     userName: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     email: {
         type: String, 
@@ -16,32 +16,25 @@ const userSchema = new mongoose.Schema({
     emailVerificationToken: String,
     emailVerificationExpiry: Date,
     password: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
-    resetToken: String,
-    resetTokenExpiry: Date,
     role: {
-        type: String,
-        default: "member"
-    }
-    ,
+      type: String,
+      default: "member",
+    },
     avt: {
-        type: String
-    }
-    ,
+      type: String,
+    },
     deliveryAddress: {
-        type: Array
-    }
-    ,
+      type: Array,
+    },
     gender: {
-        type: String
-    }
-    ,
+      type: String,
+    },
     dateOfBirth: {
-        type: String
-    }
-    ,
+      type: String,
+    },
     phoneNumbers: {
         type: Array
     },

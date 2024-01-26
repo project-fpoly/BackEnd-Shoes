@@ -2,7 +2,7 @@ import { Router } from "express"
 import { deleteMoreUsers, deleteUser, forgotPassword, getAllUsers, getOneUser, resetPassword, signIn, signUp, updateUser, verifyEmail } from "../controllers/auth"
 import { checkPermission, checkPermissionManager, checkPermissionMember } from "../middlewares/checkPermission"
 
-const routerAuth = Router()
+const routerAuth = Router();
 
 routerAuth.post("/signup", signUp)
 routerAuth.post("/signin", signIn)

@@ -1,11 +1,5 @@
-import {
-  signInValidator,
-  signUpValidator,
-  updateValidator,
-} from "../validations/user";
+import { signInValidator, signUpValidator } from "../validations/user";
 import bcryptjs from "bcryptjs";
-import crypto from "crypto";
-import nodemailer from "nodemailer";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
@@ -121,7 +115,7 @@ export const signIn = async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
       return res.status(404).json({
-        message: "email này chưa đăng ký, bạn có muốn đăng ký không?",
+        message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
       });
     }
     const isMatch = await bcryptjs.compare(req.body.password, user.password);
