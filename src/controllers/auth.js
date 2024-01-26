@@ -7,21 +7,15 @@ import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import nodemailer from 'nodemailer'
 import crypto from "crypto"
+import transporter from "../configs/nodemailer";
 dotenv.config();
 
-const { SECRET_CODE, PORT_CLIENT, GMAIL_USER, GMAIL_PASS } = process.env;
+const { SECRET_CODE, PORT_CLIENT} = process.env;
 const generateVerificationToken = () => {
   return crypto.randomBytes(3).toString("hex").toUpperCase();
 };
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_PASS,
-  },
-});
+
 
 
 export const signUp = async (req, res) => {
@@ -52,14 +46,14 @@ export const signUp = async (req, res) => {
       // Lưu thông tin xác thực vào cơ sở dữ liệu
       await newUser.save();
 
-      const mailOptions = {
+      const mailOptionsVerify = {
         from: "your-email@example.com",
         to: newUser.email,
         subject: "Xác thực tài khoản",
         text: `Mã xác thực của bạn là: ${verificationToken}`,
       };
 
-      transporter.sendMail(mailOptions, (error, info) => {
+      transporter.sendMail(mailOptionsVerify, (error, info) => {
         if (error) {
           console.error(error);
           return res.status(500).json({ error: "Internal Server Error" });
@@ -327,7 +321,7 @@ export const forgotPassword = async (req, res) => {
     const resetPasswordLink = `${origin}/reset-password?token=${resetToken}&email=${email}`;
 
     const mailOptions = {
-      from: GMAIL_USER,
+      from: "your-email@example.com",
       to: email,
       subject: "Reset Password",
       text: `Click on the following link to reset your password: ${resetPasswordLink}`,
