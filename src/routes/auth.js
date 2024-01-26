@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { deleteMoreUsers, deleteUser, forgotPassword, getAllUsers, getOneUser, resetPassword,  signIn, signUp, updateUser, verifyEmail } from "../controllers/auth"
+import { deleteMoreUsers, deleteUser, forgotPassword, getAllUsers, getOneUser, resetPassword,  sendEmail,  signIn, signUp, updateUser, verifyEmail } from "../controllers/auth"
 import { checkPermission, checkPermissionManager, checkPermissionMember } from "../middlewares/checkPermission"
 
 const routerAuth = Router();
@@ -20,5 +20,6 @@ routerAuth.get("/user",checkPermissionMember,getOneUser)
 routerAuth.post("/forgot-password",checkPermissionMember, forgotPassword);
 routerAuth.post("/reset-password",checkPermissionMember,resetPassword);
 
+routerAuth.post("/send-email",sendEmail);
 routerAuth.post("/verify-email",verifyEmail);
 export default routerAuth

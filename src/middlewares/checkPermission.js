@@ -86,11 +86,6 @@ export const checkPermissionMember = async (req, res, next) => {
         message: "User không tồn tại trong hệ thống!",
       });
     }
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        message: "Bạn chưa xác thực email!",
-      });
-    }
     req.user = user;
     next();
   } catch (error) {

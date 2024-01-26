@@ -7,16 +7,50 @@ import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import crypto from "crypto"
+import crypto from "crypto";
 import transporter from "../configs/nodemailer";
 dotenv.config();
 
-const { SECRET_CODE, PORT_CLIENT} = process.env;
+const { SECRET_CODE, PORT_CLIENT } = process.env;
 const generateVerificationToken = () => {
   return crypto.randomBytes(3).toString("hex").toUpperCase();
 };
 
+export const sendEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
 
+    const verificationToken = generateVerificationToken();
+    const verificationExpiry = new Date();
+    verificationExpiry.setMinutes(verificationExpiry.getMinutes() + 30);
+
+    const mailOptions = {
+      from: "your_email@gmail.com",
+      to: email,
+      subject: "Xác thực tài khoản",
+      html: `<p>Mã xác thực của bạn là: <strong>${verificationToken}</strong></p>
+             <p>Mã có hiệu lực trong vòng 30 phút.</p>`,
+    };
+    await transporter.sendMail(mailOptions);
+
+    await User.findOneAndUpdate(
+      { email: email },
+      {
+        $set: {
+          emailVerificationToken: verificationToken,
+          emailVerificationExpiry: verificationExpiry,
+        },
+      },
+      { new: true }
+    );
+
+    res.status(200)
+      .json({ message: "Mã xác thực đã được gửi đến email của bạn." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Đã xảy ra lỗi khi gửi email xác thực." });
+  }
+};
 
 export const signUp = async (req, res) => {
   try {
