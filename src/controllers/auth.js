@@ -23,6 +23,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
 export const signUp = async (req, res) => {
   try {
     const { error } = signUpValidator.validate(req.body, { abortEarly: false });
