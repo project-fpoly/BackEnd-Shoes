@@ -11,7 +11,7 @@ import {
   updateImage,
   uploadImage,
 } from "../controllers/comment";
-import { checkPermission } from "../middlewares/checkPermission";
+import { checkPermission, checkPermissionMember } from "../middlewares/checkPermission";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../configs/cloudinary";
 import multer from "multer";
@@ -29,12 +29,12 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 routerComment.get("/all", checkPermission, getAllComments);
-routerComment.post("/create", checkPermission, createComment);
+routerComment.post("/create", checkPermissionMember, createComment);
 routerComment.get("/:shoeId", getCommentsByProductId);
-routerComment.patch("/patch", checkPermission, updateComment);
-routerComment.delete("/delete", checkPermission, deleteComment);
+routerComment.patch("/patch", checkPermissionMember, updateComment);
+routerComment.delete("/delete/:_id", checkPermissionMember, deleteComment);
 
-routerComment.patch("/like", checkPermission, likeComment);
+routerComment.patch("/like", checkPermissionMember, likeComment);
 routerComment.post("/reply/:parent_id", checkPermission, replyComment);
 
 routerComment.post("/image/upload", upload.array("images", 10), uploadImage);

@@ -59,6 +59,7 @@ export const checkPermissionManager = async (req, res, next) => {
         message: "Bạn không có quyền làm việc này!",
       });
     }
+    req.user = user;
     next();
   } catch (error) {
     return res.status(400).json({
@@ -90,6 +91,7 @@ export const checkPermissionMember = async (req, res, next) => {
         message: "Bạn chưa xác thực email!",
       });
     }
+    req.user = user;
     next();
   } catch (error) {
     return res.status(400).json({

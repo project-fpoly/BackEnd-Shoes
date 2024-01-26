@@ -8,6 +8,7 @@ import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import nodemailer from 'nodemailer'
+import crypto from "crypto"
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT, GMAIL_USER, GMAIL_PASS } = process.env;
@@ -83,11 +84,12 @@ export const signUp = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  const { userName, emailVerificationToken } = req.body;
+  const { email, emailVerificationToken } = req.body;
 
   try {
-    const user = await User.findOne({ userName, emailVerificationToken });
-
+    const user = await User.findOne({ email, emailVerificationToken });
+    console.log(email);
+    console.log(emailVerificationToken);
     if (!user) {
       return res.status(400).json({ error: "Invalid verification token." });
     }
@@ -180,14 +182,7 @@ export const getAllUsers = async (req, res) => {
 
 export const getOneUser = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(403).json({
-        message: "Bạn chưa đăng nhập!",
-      });
-    }
-    const decoded = jwt.verify(token, SECRET_CODE);
-    const userId = decoded._id;
+    const { _id } = req.user;
 
     const projection = {
       password: 0,
@@ -201,7 +196,7 @@ export const getOneUser = async (req, res) => {
       resetTokenExpiry: 0,
     };
 
-    const user = await User.findById(userId, projection);
+    const user = await User.findById(_id, projection);
 
     if (!user) {
       return res.status(404).json({
@@ -240,6 +235,7 @@ export const updateUser = async (req, res) => {
     }
 
     existingUser.avt = updatedUser.avt || existingUser.avt;
+    existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
     existingUser.dateOfBirth =
       updatedUser.dateOfBirth || existingUser.dateOfBirth;
@@ -260,19 +256,6 @@ export const updateUser = async (req, res) => {
       existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
         address,
       }));
-    }
-    //email
-    if (updatedUser.email && updatedUser.email !== existingUser.email) {
-      const emailExist = await User.findOne({
-        email: updatedUser.email,
-        _id: { $ne: userId },
-      });
-      if (emailExist) {
-        return res.status(400).json({
-          message: `Email ${updatedUser.email} đã được sử dụng bởi người dùng khác`,
-        });
-      }
-      existingUser.email = updatedUser.email;
     }
 
     //phone
@@ -306,9 +289,9 @@ export const updateUser = async (req, res) => {
 
     const savedUser = await existingUser.save();
 
-    // Không thể thay đổi user và tạm thời có cả password
+    // Không thể thay đổi email và tạm thời có cả password
     savedUser.password = undefined;
-    savedUser.userName = undefined;
+    savedUser.email = undefined;
 
     return res.status(200).json({
       message: "Cập nhật thông tin người dùng thành công",
@@ -405,15 +388,8 @@ export const resetPassword = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(403).json({
-        message: "Bạn chưa đăng nhập!",
-      });
-    }
-    const decoded = jwt.verify(token, SECRET_CODE);
-    const userId = decoded._id;
-    const deletedUser = await User.findByIdAndDelete(userId);
+    const { _id } = req.user;
+    const deletedUser = await User.findByIdAndDelete(_id);
 
     if (!deletedUser) {
       return res.status(404).json({
@@ -423,7 +399,6 @@ export const deleteUser = async (req, res) => {
 
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
-      decoded,
     });
   } catch (error) {
     return res.status(500).json({

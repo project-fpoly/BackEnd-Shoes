@@ -29,7 +29,6 @@ export const createComment = async (req, res) => {
 
     // get userId from header Token middleware
     const { _id } = req.user;
-    console.log(req.user, _id);
     const data = await Comment.create({ ...body, userId: _id });
     return res.status(201).json({
       message: "Create Comment successfully",
@@ -45,7 +44,10 @@ export const createComment = async (req, res) => {
 export const getAllComments = async (req, res) => {
   try {
     const data = await Comment.find()
-      .populate("likes")
+      .populate({
+        path: "likes",
+        select: "userName _id role avt",
+      })
       .populate({
         path: "parentId",
         populate: {
@@ -53,7 +55,10 @@ export const getAllComments = async (req, res) => {
           select: "-__v",
         },
       })
-      .populate(["userId"])
+      .populate({
+        path: "userId",
+        select: "userName _id role avt",
+      })
       .exec();
     return res.status(200).json({
       message: "Successfully",
@@ -68,7 +73,10 @@ export const getAllComments = async (req, res) => {
 
 export const getCommentsByProductId = async (req, res) => {
   try {
-    const data = await Comment.find({ shoeId: req.params.shoeId });
+    const data = await Comment.find({ shoeId: req.params.shoeId }).populate({
+      path: "userId",
+      select: "userName _id role avt",
+    });
     return res.status(200).json({
       message: data.length > 0 ? "Successfully" : "Not found comments",
       data: data.length > 0 ? data : undefined,
@@ -83,7 +91,6 @@ export const getCommentsByProductId = async (req, res) => {
 export const updateComment = async (req, res) => {
   try {
     const { _id } = req.user;
-    console.log("user", req.user);
     const { error } = updateCommentValidate.validate(req.body, {
       abortEarly: false,
     });
@@ -99,7 +106,6 @@ export const updateComment = async (req, res) => {
         new: true,
       }
     );
-    console.log(data);
     return res.status(200).json({
       message: "updated comment successfully",
       data,
@@ -113,13 +119,30 @@ export const updateComment = async (req, res) => {
 
 export const deleteComment = async (req, res) => {
   try {
-    const data = await Comment.findByIdAndDelete(req.body._id);
+    const comment = await Comment.findById(req.params._id);
+
+    if (!comment) {
+      return res.status(404).json({
+        message: "Không tìm thấy cmt ",
+      });
+    }
+
+    if (
+      comment.userId.toString() !== req.user._id &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({
+        message: "Bạn không thể xoá cmt của người khác",
+      });
+    }
+
+    await Comment.findByIdAndDelete(req.params._id);
     return res.status(200).json({
-      message: "deleted successfully",
+      message: "Xoá thành công",
     });
   } catch (error) {
     res.status(500).json({
-      error: error,
+      error: error.message,
     });
   }
 };
@@ -128,9 +151,7 @@ export const likeComment = async (req, res) => {
   const { commentId } = req.body;
   try {
     const liker = await Comment.findById(commentId);
-    console.log("long xem di", liker, req.user);
     const isLike = liker.likes.includes(req.user._id);
-    console.log("isLike", isLike);
     if (!isLike) {
       liker.likes.push(req.user._id);
     } else {
@@ -148,7 +169,7 @@ export const likeComment = async (req, res) => {
 export const replyComment = async (req, res) => {
   try {
     const body = req.body;
-    console.log("body", body, req.params)
+    console.log("body", body, req.params);
     const { error } = commentValidate.validate(body, { abortEarly: false });
     if (error) {
       return res.status(400).json({
@@ -162,10 +183,9 @@ export const replyComment = async (req, res) => {
     //         message: "Product not found"
     //     })
     // }
-    
+
     // get userId from header Token middleware
     const { _id } = req.user;
-    // console.log(req.user, _id);
     const result = await Comment.findById({
       _id: req.params.parent_id,
     });
@@ -188,9 +208,8 @@ export const replyComment = async (req, res) => {
   }
 };
 
-
 export const uploadImage = async (req, res) => {
-  const files = req.files
+  const files = req.files;
   // console.log("files", JSON.stringify(files));
   if (!Array.isArray(files)) {
     return res.status(400).json({ error: "No files were uploaded" });
@@ -198,70 +217,69 @@ export const uploadImage = async (req, res) => {
   try {
     const uploadPromises = files.map((file) => {
       // Sử dụng Cloudinary API để upload file lên Cloudinary
-      return cloudinary.uploader.upload(file.path)
-    })
+      return cloudinary.uploader.upload(file.path);
+    });
     // console.log("uploadPromises", uploadPromises);
 
     // Chờ cho tất cả các file đều được upload lên Cloudinary
-    const results = await Promise.all(uploadPromises)
+    const results = await Promise.all(uploadPromises);
     console.log(results);
 
     // Trả về kết quả là 1 mảng các đối tượng chứa thông tin của các file đã được upload lên Cloudinary
     const uploadedFiles = results.map((result) => ({
       url: result.secure_url,
-      publicId: result.public_id
-    }))
-    return res.json({ urls: uploadedFiles })
-
+      publicId: result.public_id,
+    }));
+    return res.json({ urls: uploadedFiles });
   } catch (error) {
     return res.status(500).json({
-      error
-    })
+      error,
+    });
   }
-}
+};
 
 export const deleteImage = async (req, res) => {
-  const publicId = req.params.publicId
+  const publicId = req.params.publicId;
   console.log(publicId);
   try {
-    const result = await cloudinary.uploader.destroy(publicId)
+    const result = await cloudinary.uploader.destroy(publicId);
     return res.status(200).json({
       message: "Delete image successfully",
-      result
-    })
+      result,
+    });
   } catch (error) {
     res.status(500).json({
-      message: error.message || "Error deleting image"
-    })
+      message: error.message || "Error deleting image",
+    });
   }
-}
+};
 
 export const updateImage = async (req, res) => {
-  const files = req.files
+  const files = req.files;
   if (!Array.isArray(files)) {
     return res.status(400).json({
-      error: "No files were uploaded"
-    })
+      error: "No files were uploaded",
+    });
   }
 
-  const publicId = req.params.publicId // Lay id cua anh can cap nhat
-  const newImage = req?.files[0]?.path // Lay duong dan cua anh moi
+  const publicId = req.params.publicId; // Lay id cua anh can cap nhat
+  const newImage = req?.files[0]?.path; // Lay duong dan cua anh moi
 
   try {
     // Upload anh moi len Cloudinary va xoa anh cu cung mot luc
     const [uploadResult, deleteResult] = await Promise.all([
       cloudinary.uploader.upload(newImage),
-      cloudinary.uploader.destroy(publicId)
-    ])
+      cloudinary.uploader.destroy(publicId),
+    ]);
 
     // Tra ve ket qua voi url va publicId cua anh moi
     return res.json({
       url: uploadResult.secure_url,
-      publicId: uploadResult.public_id
-    })
+      publicId: uploadResult.public_id,
+    });
   } catch (error) {
     return res.status(500).json({
-      error: error.message || "Error updating image"
-    })
+      error: error.message || "Error updating image",
+    });
   }
-}
+};
