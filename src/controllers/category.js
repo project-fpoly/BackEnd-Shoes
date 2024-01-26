@@ -24,6 +24,25 @@ export const getAllCategory = async (req, res) => {
     }
 };
 
+export const getOneCategory = async function (req, res) {
+    try {
+        const category = await Category.findById(req.params.id).populate("products");
+        if (!category) {
+            return res.json({
+                message: "Không có danh mục nào",
+            });
+        }
+        return res.status(200).json({
+            message: "thành công",
+            data: category
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
 export const createCategory = async (req, res) => {
     try {
         const body = req.body;
