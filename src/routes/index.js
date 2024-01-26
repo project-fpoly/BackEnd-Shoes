@@ -5,8 +5,9 @@ import routerCategory from "./category";
 
 const router = express.Router();
 router.use("/auth", routerAuth);
-router.use("/bill", routerBill);
+// router.use("/bill", routerBill);
 
-router.use("/categories", routerCategory);
+// router.use("/categories", routerCategory);
+router.use("/comments", routerComment);
 
 export default router;
