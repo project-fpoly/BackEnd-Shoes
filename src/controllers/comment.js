@@ -37,7 +37,7 @@ export const createComment = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: error,
+      error: error.message,
     });
   }
 };
@@ -61,7 +61,7 @@ export const getAllComments = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      error: error,
+      error: error.message,
     });
   }
 };

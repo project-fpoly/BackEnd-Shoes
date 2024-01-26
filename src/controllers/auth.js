@@ -7,6 +7,7 @@ import bcryptjs from "bcryptjs";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import nodemailer from 'nodemailer'
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT, GMAIL_USER, GMAIL_PASS } = process.env;

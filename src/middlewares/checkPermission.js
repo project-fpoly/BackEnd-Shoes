@@ -27,9 +27,7 @@ export const checkPermission = async (req, res, next) => {
         message: "Bạn không có quyền làm việc này!",
       });
     }
-    //add user = infor cua user
     req.user = user;
-    console.log(req.user)
     next();
   } catch (error) {
     return res.status(400).json({
