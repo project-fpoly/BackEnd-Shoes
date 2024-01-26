@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import User from "../models/User";
+import User from "../models/User.js";
 dotenv.config();
 
 const { SECRET_CODE } = process.env;
@@ -27,6 +27,7 @@ export const checkPermission = async (req, res, next) => {
         message: "Bạn không có quyền làm việc này!",
       });
     }
+    req.user = user;
     next();
   } catch (error) {
     return res.status(400).json({
@@ -58,6 +59,7 @@ export const checkPermissionManager = async (req, res, next) => {
         message: "Bạn không có quyền làm việc này!",
       });
     }
+    req.user = user;
     next();
   } catch (error) {
     return res.status(400).json({
@@ -84,11 +86,7 @@ export const checkPermissionMember = async (req, res, next) => {
         message: "User không tồn tại trong hệ thống!",
       });
     }
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        message: "Bạn chưa xác thực email!",
-      });
-    }
+    req.user = user;
     next();
   } catch (error) {
     return res.status(400).json({

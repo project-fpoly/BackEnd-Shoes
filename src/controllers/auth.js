@@ -4,25 +4,53 @@ import {
   updateValidator,
 } from "../validations/user";
 import bcryptjs from "bcryptjs";
-import crypto from "crypto";
-import nodemailer from "nodemailer";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import transporter from "../configs/nodemailer";
 dotenv.config();
 
-const { SECRET_CODE, PORT_CLIENT, GMAIL_USER, GMAIL_PASS } = process.env;
+const { SECRET_CODE, PORT_CLIENT } = process.env;
 const generateVerificationToken = () => {
   return crypto.randomBytes(3).toString("hex").toUpperCase();
 };
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: GMAIL_USER,
-    pass: GMAIL_PASS,
-  },
-});
 
+export const sendEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const verificationToken = generateVerificationToken();
+    const verificationExpiry = new Date();
+    verificationExpiry.setMinutes(verificationExpiry.getMinutes() + 30);
+
+    const mailOptions = {
+      from: "your_email@gmail.com",
+      to: email,
+      subject: "Xác thực tài khoản",
+      html: `<p>Mã xác thực của bạn là: <strong>${verificationToken}</strong></p>
+             <p>Mã có hiệu lực trong vòng 30 phút.</p>`,
+    };
+    await transporter.sendMail(mailOptions);
+
+    await User.findOneAndUpdate(
+      { email: email },
+      {
+        $set: {
+          emailVerificationToken: verificationToken,
+          emailVerificationExpiry: verificationExpiry,
+        },
+      },
+      { new: true }
+    );
+
+    res.status(200)
+      .json({ message: "Mã xác thực đã được gửi đến email của bạn." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Đã xảy ra lỗi khi gửi email xác thực." });
+  }
+};
 
 export const signUp = async (req, res) => {
   try {
@@ -52,14 +80,14 @@ export const signUp = async (req, res) => {
       // Lưu thông tin xác thực vào cơ sở dữ liệu
       await newUser.save();
 
-      const mailOptions = {
+      const mailOptionsVerify = {
         from: "your-email@example.com",
         to: newUser.email,
         subject: "Xác thực tài khoản",
         text: `Mã xác thực của bạn là: ${verificationToken}`,
       };
 
-      transporter.sendMail(mailOptions, (error, info) => {
+      transporter.sendMail(mailOptionsVerify, (error, info) => {
         if (error) {
           console.error(error);
           return res.status(500).json({ error: "Internal Server Error" });
@@ -84,11 +112,12 @@ export const signUp = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  const { userName, emailVerificationToken } = req.body;
+  const { email, emailVerificationToken } = req.body;
 
   try {
-    const user = await User.findOne({ userName, emailVerificationToken });
-
+    const user = await User.findOne({ email, emailVerificationToken });
+    console.log(email);
+    console.log(emailVerificationToken);
     if (!user) {
       return res.status(400).json({ error: "Invalid verification token." });
     }
@@ -181,14 +210,7 @@ export const getAllUsers = async (req, res) => {
 
 export const getOneUser = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(403).json({
-        message: "Bạn chưa đăng nhập!",
-      });
-    }
-    const decoded = jwt.verify(token, SECRET_CODE);
-    const userId = decoded._id;
+    const { _id } = req.user;
 
     const projection = {
       password: 0,
@@ -202,7 +224,7 @@ export const getOneUser = async (req, res) => {
       resetTokenExpiry: 0,
     };
 
-    const user = await User.findById(userId, projection);
+    const user = await User.findById(_id, projection);
 
     if (!user) {
       return res.status(404).json({
@@ -241,6 +263,7 @@ export const updateUser = async (req, res) => {
     }
 
     existingUser.avt = updatedUser.avt || existingUser.avt;
+    existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
     existingUser.dateOfBirth =
       updatedUser.dateOfBirth || existingUser.dateOfBirth;
@@ -261,19 +284,6 @@ export const updateUser = async (req, res) => {
       existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
         address,
       }));
-    }
-    //email
-    if (updatedUser.email && updatedUser.email !== existingUser.email) {
-      const emailExist = await User.findOne({
-        email: updatedUser.email,
-        _id: { $ne: userId },
-      });
-      if (emailExist) {
-        return res.status(400).json({
-          message: `Email ${updatedUser.email} đã được sử dụng bởi người dùng khác`,
-        });
-      }
-      existingUser.email = updatedUser.email;
     }
 
     //phone
@@ -307,9 +317,9 @@ export const updateUser = async (req, res) => {
 
     const savedUser = await existingUser.save();
 
-    // Không thể thay đổi user và tạm thời có cả password
+    // Không thể thay đổi email và tạm thời có cả password
     savedUser.password = undefined;
-    savedUser.userName = undefined;
+    savedUser.email = undefined;
 
     return res.status(200).json({
       message: "Cập nhật thông tin người dùng thành công",
@@ -345,7 +355,7 @@ export const forgotPassword = async (req, res) => {
     const resetPasswordLink = `${origin}/reset-password?token=${resetToken}&email=${email}`;
 
     const mailOptions = {
-      from: GMAIL_USER,
+      from: "your-email@example.com",
       to: email,
       subject: "Reset Password",
       text: `Click on the following link to reset your password: ${resetPasswordLink}`,
@@ -406,15 +416,8 @@ export const resetPassword = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(403).json({
-        message: "Bạn chưa đăng nhập!",
-      });
-    }
-    const decoded = jwt.verify(token, SECRET_CODE);
-    const userId = decoded._id;
-    const deletedUser = await User.findByIdAndDelete(userId);
+    const { _id } = req.user;
+    const deletedUser = await User.findByIdAndDelete(_id);
 
     if (!deletedUser) {
       return res.status(404).json({
@@ -424,7 +427,6 @@ export const deleteUser = async (req, res) => {
 
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
-      decoded,
     });
   } catch (error) {
     return res.status(500).json({
