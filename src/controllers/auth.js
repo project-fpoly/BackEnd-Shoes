@@ -1,5 +1,11 @@
-import { signInValidator, signUpValidator } from "../validations/user";
+import {
+  signInValidator,
+  signUpValidator,
+  updateValidator,
+} from "../validations/user";
 import bcryptjs from "bcryptjs";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 import User from "../models/User";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
