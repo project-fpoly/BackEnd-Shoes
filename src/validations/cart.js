@@ -30,9 +30,9 @@ export const shippingAddressSchema = Joi.object({
     "string.empty": "Địa chỉ không được để trống",
     "any.required": "Địa chỉ là trường bắt buộc",
   }),
-  city: Joi.string().required().messages({
-    "string.empty": "Thành phố không được để trống",
-    "any.required": "Thành phố là trường bắt buộc",
+  email: Joi.string().email().required().messages({
+    "string.empty": "Email không được để trống",
+    "any.required": "Email là trường bắt buộc",
   }),
   phone: Joi.number().required().messages({
     "number.empty": "Số điện thoại không được để trống",

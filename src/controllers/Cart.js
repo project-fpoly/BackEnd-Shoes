@@ -1,13 +1,13 @@
-import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import Cart from "../models/Cart";
 import { cartSchema } from "../validations/cart";
 import nodemailer from "nodemailer";
 import User from "../models/User";
 dotenv.config();
-const { SECRET_CODE, GMAIL_ADMIN, PASS_ADMIN } = process.env;
+const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
 // Tạo một giỏ hàng mới
+
 const createCart = async (req, res) => {
   try {
     const {
@@ -19,16 +19,13 @@ const createCart = async (req, res) => {
       totalPrice,
     } = req.body;
 
-    // Lấy ID của người dùng từ access token
-    const userId = req.user._id;
-    // Kiểm tra hợp lệ dữ liệu đầu vào
-    const { error } = cartSchema.validate(req.body);
+    const userId = req.body.user?._id || null;
+    const { error } = await cartSchema.validateAsync(req.body);
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return res.status(400).json({ error: "Invalid input data" });
     }
 
-    // Lưu giỏ hàng vào cơ sở dữ liệu với userId
-    const cart = new Cart({
+    const savedCart = await Cart.create({
       cartItem,
       shippingAddress,
       paymentMethod,
@@ -37,10 +34,10 @@ const createCart = async (req, res) => {
       totalPrice,
       user: userId,
     });
-    const savedCart = await cart.save();
     res.json({ message: "Add cart complete", savedCart });
-    const user = await User.findById(userId);
-    const userEmail = user.email;
+
+    const userEmail = shippingAddress.email;
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -64,7 +61,8 @@ const createCart = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error in createCart:", error);
+    res.status(500).json({ error: "Failed to save cart" });
   }
 };
 
@@ -164,27 +162,5 @@ const deleteCart = async (req, res) => {
 };
 
 // Middleware xác thực Mã thông báo
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  if (!authHeader) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
 
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, SECRET_CODE, (err, decodedToken) => {
-    if (err) {
-      return res.status(403).json({ error: "Invalid token" });
-    }
-    req.user = decodedToken;
-    next();
-  });
-}
-
-export {
-  createCart,
-  getCartById,
-  updateCart,
-  deleteCart,
-  getAllCarts,
-  authenticateToken,
-};
+export { createCart, getCartById, updateCart, deleteCart, getAllCarts };
