@@ -47,7 +47,7 @@ export const cartSchema = Joi.object({
   itemsPrice: Joi.number().required(),
   shippingPrice: Joi.number().required(),
   totalPrice: Joi.number().required(),
-  user: Joi.required(),
+  user: Joi.allow(null),
   isPaid: Joi.boolean().default(false),
   paidAt: Joi.date(),
   isDelivered: Joi.string()

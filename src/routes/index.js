@@ -1,4 +1,3 @@
-import routerProduct from "./product";
 import express from "express";
 import routerAuth from "./auth";
 import routerCategory from "./category";

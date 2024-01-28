@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import Cart from "../models/Cart";
 import { cartSchema } from "../validations/cart";
 import nodemailer from "nodemailer";
-import User from "../models/User";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
@@ -18,12 +17,15 @@ const createCart = async (req, res) => {
       shippingPrice,
       totalPrice,
     } = req.body;
-
     const userId = req.body.user?._id || null;
-    const { error } = await cartSchema.validateAsync(req.body);
-    if (error) {
-      return res.status(400).json({ error: "Invalid input data" });
-    }
+    const isUser = !!userId; // Nếu userId tồn tại, isUser sẽ là true. Ngược lại, isUser sẽ là false.
+
+    const userEmail = shippingAddress.email;
+    const hasEmail = !!userEmail; // Nếu userEmail tồn tại, hasEmail sẽ là true. Ngược lại, hasEmail sẽ là false.
+
+    // Tiếp tục xử lý và lưu giỏ hàng
+
+    // Sử dụng giá trị của isUser và hasEmail trong quá trình xử lý tiếp theo
 
     const savedCart = await Cart.create({
       cartItem,
@@ -36,30 +38,31 @@ const createCart = async (req, res) => {
     });
     res.json({ message: "Add cart complete", savedCart });
 
-    const userEmail = shippingAddress.email;
+    // Gửi email xác nhận đơn hàng tới email của khách hàng không đăng nhập đã nhập vào input
+    if (!isUser && hasEmail) {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: GMAIL_ADMIN,
+          pass: PASS_ADMIN,
+        },
+      });
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: GMAIL_ADMIN,
-        pass: PASS_ADMIN,
-      },
-    });
+      const mailOptions = {
+        from: GMAIL_ADMIN,
+        to: userEmail,
+        subject: "Xác nhận đơn hàng",
+        text: "Đơn hàng của bạn đã được đặt thành công.",
+      };
 
-    const mailOptions = {
-      from: GMAIL_ADMIN,
-      to: userEmail,
-      subject: "Xác nhận đơn hàng",
-      text: "Đơn hàng của bạn đã được đặt thành công.",
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log("Gửi email thất bại:", error);
-      } else {
-        console.log("Gửi email thành công:", info.response);
-      }
-    });
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log("Gửi email thất bại:", error);
+        } else {
+          console.log("Gửi email thành công:", info.response);
+        }
+      });
+    }
   } catch (error) {
     console.error("Error in createCart:", error);
     res.status(500).json({ error: "Failed to save cart" });

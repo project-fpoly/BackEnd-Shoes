@@ -28,8 +28,7 @@ const cartSchema = mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
-      isUser: { type: Boolean, default: false },
+      required: false,
     },
     isUser: { type: Boolean, default: false },
     isPaid: { type: Boolean, default: false },
