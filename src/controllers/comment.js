@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 import Comment from "../models/Comment";
+import User from "../models/User";
+import Product from "../models/Product";
 import {
   commentValidate,
   updateCommentValidate,
@@ -20,12 +22,12 @@ export const createComment = async (req, res) => {
       });
     }
     // check shoeId is exist?
-    // const product = await products.findById(body.shoeId)
-    // if(!product) {
-    //     return res.status(404).json({
-    //         message: "Product not found"
-    //     })
-    // }
+    const product = await Product.findById(body.shoeId)
+    if(!product) {
+        return res.status(404).json({
+            message: "Product not found"
+        })
+    }
 
     // get userId from header Token middleware
     const { _id } = req.user;
@@ -43,47 +45,75 @@ export const createComment = async (req, res) => {
 
 export const getAllComments = async (req, res) => {
   try {
-    const data = await Comment.find()
-      .populate({
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const searchKeyword = req.query.search || "";
+    const shoeId = req.query.shoeId || null;
+
+    const options = {
+      page,
+      limit: pageSize,
+      select: { password: 0 },
+    };
+    const searchCondition = {
+      $or: [
+        { content: { $regex: searchKeyword, $options: "i" } },
+      ],
+    };
+    if (shoeId) {
+      searchCondition.shoeId = shoeId;
+    }
+    const data = await Comment.paginate(searchCondition, options);
+    
+    // Populate the necessary fields after pagination
+    await Comment.populate(data.docs, [
+      {
         path: "likes",
         select: "userName _id role avt",
-      })
-      .populate({
+      },
+      {
         path: "parentId",
         populate: {
           path: "userId",
-          select: "-__v",
+          select: "userName _id role avt",
         },
-      })
-      .populate({
+      },
+      {
         path: "userId",
         select: "userName _id role avt",
-      })
-      .exec();
+      },
+    ]);
+      
     return res.status(200).json({
-      message: "Successfully",
-      data,
+        ...data,
+        docs: data.docs.map(comment => ({
+          ...comment.toObject(),
+          likes: comment.likes.map(like => ({
+            userName: like.userName,
+            _id: like._id,
+            role: like.role,
+            avt: like.avt,
+          })),
+          parentId: comment.parentId ? {
+            ...comment.parentId.toObject(),
+            userId: {
+              userName: comment.parentId.userId.userName,
+              _id: comment.parentId.userId._id,
+              role: comment.parentId.userId.role,
+              avt: comment.parentId.userId.avt,
+            },
+          } : null,
+          userId: {
+            userName: comment.userId.userName,
+            _id: comment.userId._id,
+            role: comment.userId.role,
+            avt: comment.userId.avt,
+          },
+        })),
     });
   } catch (error) {
     res.status(500).json({
       error: error.message,
-    });
-  }
-};
-
-export const getCommentsByProductId = async (req, res) => {
-  try {
-    const data = await Comment.find({ shoeId: req.params.shoeId }).populate({
-      path: "userId",
-      select: "userName _id role avt",
-    });
-    return res.status(200).json({
-      message: data.length > 0 ? "Successfully" : "Not found comments",
-      data: data.length > 0 ? data : undefined,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error,
     });
   }
 };
@@ -169,7 +199,6 @@ export const likeComment = async (req, res) => {
 export const replyComment = async (req, res) => {
   try {
     const body = req.body;
-    console.log("body", body, req.params);
     const { error } = commentValidate.validate(body, { abortEarly: false });
     if (error) {
       return res.status(400).json({
@@ -177,12 +206,12 @@ export const replyComment = async (req, res) => {
       });
     }
     // check shoeId is exist?
-    // const product = await products.findById(body.shoeId)
-    // if(!product) {
-    //     return res.status(404).json({
-    //         message: "Product not found"
-    //     })
-    // }
+    const cmt = await Comment.findById(req.params.parent_id)
+    if(!cmt) {
+        return res.status(404).json({
+            message: "cmt not found"
+        })
+    }
 
     // get userId from header Token middleware
     const { _id } = req.user;
@@ -192,18 +221,21 @@ export const replyComment = async (req, res) => {
     if (!result) {
       return res.status(400).json("Khong tim thay");
     }
+
     const data = await Comment.create({
       ...body,
-      userId: _id,
+      userId: await User.findById(_id).select('_id userName role avt').lean(),
       parentId: req.params.parent_id,
     });
+    
+        
     return res.status(201).json({
       message: "Reply comment successfully",
       data,
     });
   } catch (error) {
     res.status(500).json({
-      error: error,
+      error: error.message,
     });
   }
 };
