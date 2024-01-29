@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import mongoosePaginate from "mongoose-paginate-v2";
 const commentSchema = new mongoose.Schema(
   {
     shoeId: {
@@ -38,5 +38,5 @@ const commentSchema = new mongoose.Schema(
     versionKey: false,
   }
 );
-
+commentSchema.plugin(mongoosePaginate);
 export default mongoose.model("Comment", commentSchema);

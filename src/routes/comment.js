@@ -4,7 +4,6 @@ import {
   deleteComment,
   deleteImage,
   getAllComments,
-  getCommentsByProductId,
   likeComment,
   replyComment,
   updateComment,
@@ -30,7 +29,6 @@ const upload = multer({ storage });
 
 routerComment.get("/all", checkPermission, getAllComments);
 routerComment.post("/create", checkPermissionMember, createComment);
-routerComment.get("/:shoeId", getCommentsByProductId);
 routerComment.patch("/patch", checkPermissionMember, updateComment);
 routerComment.delete("/delete/:_id", checkPermissionMember, deleteComment);
 
