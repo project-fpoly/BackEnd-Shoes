@@ -97,7 +97,32 @@ const getAllCarts = async (req, res) => {
   }
 };
 
-// Lấy một giỏ hàng theo ID
+const getAllCartsAdmin = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    // Đếm tổng số giỏ hàng
+    const totalCarts = await Cart.countDocuments();
+
+    // Lấy giỏ hàng theo trang và số lượng giới hạn
+    const carts = await Cart.find({})
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      carts,
+      pagination: {
+        totalCarts,
+        totalPages: Math.ceil(totalCarts / limit),
+        currentPage: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+// Lấy một giỏ hàng theo ID của user
 const getCartById = async (req, res) => {
   try {
     const { _id: userId } = req.user;
@@ -113,7 +138,22 @@ const getCartById = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+// Lấy một giỏ hàng theo ID của user dành cho admin
 
+const getCartByIdAdmin = async (req, res) => {
+  try {
+    const { id: cartId } = req.params;
+
+    const cart = await Cart.findById(cartId);
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    res.json(cart);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 // Cập nhật một giỏ hàng theo ID
 const updateCart = async (req, res) => {
   try {
@@ -146,12 +186,10 @@ const updateCart = async (req, res) => {
 // Xóa một giỏ hàng theo ID
 const deleteCart = async (req, res) => {
   try {
-    const { _id: userId } = req.user;
     const { id: cartId } = req.params;
 
     const deletedCart = await Cart.findOneAndDelete({
       _id: cartId,
-      user: userId,
     });
 
     if (!deletedCart) {
@@ -166,4 +204,12 @@ const deleteCart = async (req, res) => {
 
 // Middleware xác thực Mã thông báo
 
-export { createCart, getCartById, updateCart, deleteCart, getAllCarts };
+export {
+  createCart,
+  getCartById,
+  updateCart,
+  deleteCart,
+  getAllCarts,
+  getAllCartsAdmin,
+  getCartByIdAdmin,
+};

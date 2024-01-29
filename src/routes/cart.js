@@ -6,15 +6,19 @@ import {
   updateCart,
   deleteCart,
   getAllCarts,
+  getAllCartsAdmin,
+  getCartByIdAdmin,
 } from "../controllers/Cart";
-import { authenticateToken } from "../middlewares/checkOrders";
-import { checkCreateOder } from "../middlewares/checkAddOrder";
+import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders";
+import { checkPermissionManager } from "../middlewares/checkPermission";
 const routerCart = Router();
 
 routerCart.post("/carts", checkCreateOder, createCart);
 routerCart.get("/carts/:id", authenticateToken, getCartById);
-routerCart.put("/carts/:id", authenticateToken, updateCart);
-routerCart.delete("/carts/:id", authenticateToken, deleteCart);
 routerCart.get("/carts", authenticateToken, getAllCarts);
+routerCart.put("/carts/:id", checkPermissionManager, updateCart);
+routerCart.delete("/carts/:id", checkPermissionManager, deleteCart);
+routerCart.get("/admin/carts", checkPermissionManager, getAllCartsAdmin);
+routerCart.get("/admin/carts", checkPermissionManager, getCartByIdAdmin);
 
 export default routerCart;
