@@ -1,20 +1,17 @@
 import mongoose from "mongoose";
+
+const cartItemSchema = mongoose.Schema({
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+  },
+  quantity: { type: Number, required: true },
+});
+
 const cartSchema = mongoose.Schema(
   {
-    cartItem: [
-      {
-        name: { type: String, required: true },
-        quantity: { type: Number, required: true },
-        image: { type: String, required: true },
-        price: { type: Number, required: true },
-        discount: { type: String },
-        shoes: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Shoes",
-          required: true,
-        },
-      },
-    ],
+    cartItems: [cartItemSchema],
     shippingAddress: {
       email: { type: String, required: true },
       fullname: { type: String, required: true },
@@ -22,7 +19,6 @@ const cartSchema = mongoose.Schema(
       phone: { type: Number, required: true },
     },
     paymentMethod: { type: String, required: true },
-    itemsPrice: { type: Number, required: true },
     shippingPrice: { type: Number, required: true },
     totalPrice: { type: Number, required: true },
     user: {
@@ -40,4 +36,5 @@ const cartSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
 export default mongoose.model("Cart", cartSchema);

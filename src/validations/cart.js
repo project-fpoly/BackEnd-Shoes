@@ -1,24 +1,8 @@
 import Joi from "joi";
 
 export const cartItemSchema = Joi.object({
-  name: Joi.string().required().messages({
-    "string.empty": "Tên không được để trống",
-    "any.required": "Tên là trường bắt buộc",
-  }),
-  quantity: Joi.number().min(1).max(10).required().messages({
-    "number.empty": "Số lượng không được để trống",
-    "number.min": "Số lượng tối thiểu là {#limit}",
-    "number.max": "Số lượng tối đa là {#limit}",
-  }),
-  image: Joi.string().required().messages({
-    "string.empty": "Hình ảnh không được để trống",
-    "any.required": "Hình ảnh là trường bắt buộc",
-  }),
-  price: Joi.number().required().messages({
-    "number.empty": "Giá không được để trống",
-    "any.required": "Giá là trường bắt buộc",
-  }),
-  shoes: Joi.required(),
+  product: Joi.required(),
+  quantity: Joi.number().min(1).required(),
 });
 
 export const shippingAddressSchema = Joi.object({
@@ -44,7 +28,6 @@ export const cartSchema = Joi.object({
   cartItem: Joi.array().items(cartItemSchema).required(),
   shippingAddress: shippingAddressSchema.required(),
   paymentMethod: Joi.string().required(),
-  itemsPrice: Joi.number().required(),
   shippingPrice: Joi.number().required(),
   totalPrice: Joi.number().required(),
   user: Joi.allow(null),

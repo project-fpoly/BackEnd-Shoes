@@ -19,6 +19,6 @@ routerCart.get("/carts", authenticateToken, getAllCarts);
 routerCart.put("/carts/:id", checkPermissionManager, updateCart);
 routerCart.delete("/carts/:id", checkPermissionManager, deleteCart);
 routerCart.get("/admin/carts", checkPermissionManager, getAllCartsAdmin);
-routerCart.get("/admin/carts", checkPermissionManager, getCartByIdAdmin);
+routerCart.get("/admin/carts/:id", checkPermissionManager, getCartByIdAdmin);
 
 export default routerCart;

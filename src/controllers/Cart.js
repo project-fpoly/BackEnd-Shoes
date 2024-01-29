@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import Cart from "../models/Cart";
 import { cartSchema } from "../validations/cart";
 import nodemailer from "nodemailer";
+import Product from "../models/Product";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
@@ -10,36 +11,41 @@ const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 const createCart = async (req, res) => {
   try {
     const {
-      cartItem,
+      cartItems,
       shippingAddress,
       paymentMethod,
-      itemsPrice,
       shippingPrice,
       totalPrice,
     } = req.body;
-    const userId = req.body.user?._id || null;
+    const userId = req.user?._id || null;
     const isUser = !!userId; // Nếu userId tồn tại, isUser sẽ là true. Ngược lại, isUser sẽ là false.
 
     const userEmail = shippingAddress.email;
-    const hasEmail = !!userEmail; // Nếu userEmail tồn tại, hasEmail sẽ là true. Ngược lại, hasEmail sẽ là false.
-
+    const products = await Product.find();
+    cartItems.forEach((cartItem) => {
+      const existingProduct = products.find(
+        (product) => product._id.toString() === cartItem.product
+      );
+      if (existingProduct) {
+        cartItem.quantity += 1;
+      }
+    });
     // Tiếp tục xử lý và lưu giỏ hàng
-
     // Sử dụng giá trị của isUser và hasEmail trong quá trình xử lý tiếp theo
 
     const savedCart = await Cart.create({
-      cartItem,
+      cartItems,
       shippingAddress,
       paymentMethod,
-      itemsPrice,
       shippingPrice,
       totalPrice,
       user: userId,
+      isUser,
+      products,
     });
     res.json({ message: "Add cart complete", savedCart });
-
     // Gửi email xác nhận đơn hàng tới email của khách hàng không đăng nhập đã nhập vào input
-    if (!isUser && hasEmail) {
+    if (userEmail) {
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -51,7 +57,7 @@ const createCart = async (req, res) => {
       const mailOptions = {
         from: GMAIL_ADMIN,
         to: userEmail,
-        subject: "Xác nhận đơn hàng",
+        subject: "Bạn đã đặt hàng thành công",
         text: "Đơn hàng của bạn đã được đặt thành công.",
       };
 
@@ -143,8 +149,7 @@ const getCartById = async (req, res) => {
 const getCartByIdAdmin = async (req, res) => {
   try {
     const { id: cartId } = req.params;
-
-    const cart = await Cart.findById(cartId);
+    const cart = await Cart.findById({ _id: cartId });
     if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
     }
