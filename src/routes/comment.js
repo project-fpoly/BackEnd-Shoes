@@ -27,7 +27,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-routerComment.get("/all", checkPermission, getAllComments);
+routerComment.get("/all", getAllComments);
 routerComment.post("/create", checkPermissionMember, createComment);
 routerComment.patch("/patch", checkPermissionMember, updateComment);
 routerComment.delete("/delete/:_id", checkPermissionMember, deleteComment);

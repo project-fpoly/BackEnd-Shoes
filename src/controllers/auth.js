@@ -261,7 +261,9 @@ export const updateUser = async (req, res) => {
         message: "Người dùng không tồn tại",
       });
     }
-
+    // if (req.file) {
+    //   existingUser.avt = req.file.path;
+    // }
     existingUser.avt = updatedUser.avt || existingUser.avt;
     existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
