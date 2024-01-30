@@ -19,7 +19,6 @@ const createCart = async (req, res) => {
     } = req.body;
     const userId = req.user?._id || null;
     const isUser = !!userId; // Nếu userId tồn tại, isUser sẽ là true. Ngược lại, isUser sẽ là false.
-
     const userEmail = shippingAddress.email;
     const products = await Product.find();
     cartItems.forEach((cartItem) => {
@@ -27,7 +26,7 @@ const createCart = async (req, res) => {
         (product) => product._id.toString() === cartItem.product
       );
       if (existingProduct) {
-        cartItem.quantity += 1;
+        console.log(existingProduct.quantity - cartItem.quantity);
       }
     });
     // Tiếp tục xử lý và lưu giỏ hàng
@@ -43,6 +42,7 @@ const createCart = async (req, res) => {
       isUser,
       products,
     });
+    console.log(savedCart);
     res.json({ message: "Add cart complete", savedCart });
     // Gửi email xác nhận đơn hàng tới email của khách hàng không đăng nhập đã nhập vào input
     if (userEmail) {
@@ -58,7 +58,7 @@ const createCart = async (req, res) => {
         from: GMAIL_ADMIN,
         to: userEmail,
         subject: "Bạn đã đặt hàng thành công",
-        text: "Đơn hàng của bạn đã được đặt thành công.",
+        text: `"Đơn hàng của bạn đã được đặt thành công."`,
       };
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -79,13 +79,33 @@ const createCart = async (req, res) => {
 const getAllCarts = async (req, res) => {
   try {
     const { _id: userId } = req.user;
-    const { page = 1, limit = 10 } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      startDay,
+      endDay,
+      startMonth,
+      endMonth,
+      startYear,
+      endYear,
+    } = req.query;
+
+    let query = { user: userId };
+
+    // Nếu có giá trị của startDay, endDay, startMonth, startYear, endMonth và endYear được truyền vào, thực hiện tìm kiếm theo khoảng thời gian cụ thể
+    if (startDay && endDay && startMonth && endMonth && startYear && endYear) {
+      const startDate = new Date(`${startYear}-${startMonth}-${startDay}`);
+      const endDate = new Date(`${endYear}-${endMonth}-${endDay}`);
+
+      query.createdAt = { $gte: startDate, $lte: endDate };
+    }
 
     // Đếm tổng số giỏ hàng
-    const totalCarts = await Cart.countDocuments({ user: userId });
+    const totalCarts = await Cart.countDocuments(query);
 
-    // Lấy giỏ hàng theo trang và số lượng giới hạn
-    const carts = await Cart.find({ user: userId })
+    // Lấy giỏ hàng theo trang và số lượng giới hạn, sắp xếp theo thời gian tạo giảm dần
+    const carts = await Cart.find(query)
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
 
@@ -102,16 +122,35 @@ const getAllCarts = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
 const getAllCartsAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      startDay,
+      endDay,
+      startMonth,
+      endMonth,
+      startYear,
+      endYear,
+    } = req.query;
+
+    let query = {};
+
+    // Nếu có giá trị của startDay, endDay, startMonth, startYear, endMonth và endYear được truyền vào, thực hiện tìm kiếm theo khoảng thời gian cụ thể
+    if (startDay && endDay && startMonth && endMonth && startYear && endYear) {
+      const startDate = new Date(`${startYear}-${startMonth}-${startDay}`);
+      const endDate = new Date(`${endYear}-${endMonth}-${endDay}`);
+
+      query.createdAt = { $gte: startDate, $lte: endDate };
+    }
 
     // Đếm tổng số giỏ hàng
-    const totalCarts = await Cart.countDocuments();
+    const totalCarts = await Cart.countDocuments(query);
 
-    // Lấy giỏ hàng theo trang và số lượng giới hạn
-    const carts = await Cart.find({})
+    // Lấy giỏ hàng theo trang và số lượng giới hạn, sắp xếp theo thời gian tạo giảm dần
+    const carts = await Cart.find(query)
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
 

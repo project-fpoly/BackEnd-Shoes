@@ -2,7 +2,7 @@ import Joi from "joi";
 
 export const cartItemSchema = Joi.object({
   product: Joi.required(),
-  quantity: Joi.number().min(1).required(),
+  quantity: Joi.number().min(0).required(),
 });
 
 export const shippingAddressSchema = Joi.object({
