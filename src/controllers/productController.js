@@ -116,25 +116,20 @@ const addProduct = async (req, res) => {
     });
   }
 };
-
 const getAllProduct = async (req, res) => {
-  const PAGE_SIZE = 12;
-  const page = parseInt(req.query.page);
-  const category = req.query.category;
-  const sort = req.query.sort;
-  const size = req.query.size;
-  const filter = req.query.filter;
-  const color = req.query.color;
-  const material = req.query.material;
-  const releaseDate = req.query.releaseDate;
-  const isPublished = req.query.isPublished;
+  const { page, pageSize, category, sort, size, filter, color, material, releaseDate, isPublished } = req.query;
+
+  const options = {
+    page: parseInt(page),
+    limit: parseInt(pageSize),
+  };
 
   try {
-
-
-    const skip = (page - 1) * PAGE_SIZE;
+  
+    const skip = (options.page - 1) * options.limit;
 
     let query = {};
+  
     if (size) {
       const sizes = size.split(",");
       query.size = { $in: sizes };
@@ -166,24 +161,24 @@ const getAllProduct = async (req, res) => {
       .populate("categoryId", "name")
       .sort(sort)
       .skip(skip)
-      .limit(PAGE_SIZE);
+      .limit(options.limit);
 
     const total = await Product.countDocuments(query);
-    const last_page = Math.ceil(total / PAGE_SIZE);
+    const last_page = Math.ceil(total / options.limit);
+    
 
     if (products.length === 0) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: "Không tìm thấy sản phẩm",
       });
-      return;
     }
 
     res.status(200).json({
       success: true,
       message: "Lấy danh sách sản phẩm thành công",
       last_page: last_page,
-      current_page: page,
+      current_page: options.page,
       data: products,
     });
   } catch (error) {

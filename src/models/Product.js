@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import timestampPlugin from "mongoose-timestamp";
+import mongoosePaginate from "mongoose-paginate-v2";
 
 const { Schema } = mongoose;
 
@@ -135,7 +136,7 @@ ProductSchema.plugin(timestampPlugin);
 // Indexes
 ProductSchema.index({ id: 1, name: "text" });
 ProductSchema.index({ categoryId: 1 });
-
+ProductSchema.plugin(mongoosePaginate);
 const Product = mongoose.model("Product", ProductSchema);
 
 export default Product;
