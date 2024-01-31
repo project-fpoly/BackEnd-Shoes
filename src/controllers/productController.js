@@ -24,7 +24,7 @@ const addProduct = async (req, res) => {
       name,
       description,
       categoryId,
-  
+
       price,
       sale,
       discount,
@@ -73,7 +73,7 @@ const addProduct = async (req, res) => {
       name,
       description,
       categoryId,
-   
+
       price,
       sale,
       discount,
@@ -122,6 +122,7 @@ const getAllProduct = async (req, res) => {
   const page = parseInt(req.query.page);
   const category = req.query.category;
   const sort = req.query.sort;
+  const size = req.query.size;
   const filter = req.query.filter;
   const color = req.query.color;
   const material = req.query.material;
@@ -129,12 +130,15 @@ const getAllProduct = async (req, res) => {
   const isPublished = req.query.isPublished;
 
   try {
-   
+
 
     const skip = (page - 1) * PAGE_SIZE;
 
     let query = {};
-
+    if (size) {
+      const sizes = size.split(",");
+      query.size = { $in: sizes };
+    }
     if (category) {
       query.categoryId = category;
     }
