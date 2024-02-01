@@ -2,6 +2,7 @@ import Product from "../models/Product";
 import productValidator from "../validations/Product";
 import multer from "multer";
 import Category from "../models/Category";
+import { isValid } from "date-fns";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -31,7 +32,7 @@ const addProduct = async (req, res) => {
       quantity,
       sold_count,
       rating,
-      size,
+      sizes,
       color,
       material,
       release_date,
@@ -80,7 +81,7 @@ const addProduct = async (req, res) => {
       quantity,
       sold_count,
       rating,
-      size,
+      sizes,
       color,
       material,
       release_date,
@@ -117,74 +118,145 @@ const addProduct = async (req, res) => {
   }
 };
 const getAllProduct = async (req, res) => {
-  const { page, pageSize, category, sort, size, filter, color, material, releaseDate, isPublished } = req.query;
-
-  const options = {
-    page: parseInt(page),
-    limit: parseInt(pageSize),
-  };
-
   try {
-  
-    const skip = (options.page - 1) * options.limit;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const searchKeyword = req.query.searchKeyword || "";
+    const categoryFilter = req.query.categoryFilter || "";
+    const sizeFilter = req.query.sizeFilter || "";
+    const priceFilter = req.query.priceFilter || "";
+    const materialFilter = req.query.materialFilter || "";
+    const releaseDateFilter = req.query.releaseDateFilter || "";
+    const sortOrder = req.query.sortOrder;
 
-    let query = {};
-  
-    if (size) {
-      const sizes = size.split(",");
-      query.size = { $in: sizes };
-    }
-    if (category) {
-      query.categoryId = category;
-    }
-    if (filter) {
-      query.name = { $regex: filter, $options: "i" };
-    }
+    const options = {
+      page,
+      limit: pageSize,
+    };
 
-    if (color) {
-      query.color = color;
-    }
+    const searchKeywordRegex = new RegExp(searchKeyword, "i");
 
-    if (material) {
-      query.material = material;
-    }
+    let searchCondition = {
+      $or: [
+        { name: searchKeywordRegex },
+      ],
+    };
 
-    if (releaseDate) {
-      query.release_date = releaseDate;
-    }
-
-    if (isPublished) {
-      query.isPublished = isPublished;
+    if (categoryFilter) {
+      searchCondition.categoryId = categoryFilter;
     }
 
-    const products = await Product.find(query)
-      .populate("categoryId", "name")
-      .sort(sort)
-      .skip(skip)
-      .limit(options.limit);
+    if (sizeFilter) {
+      searchCondition["sizes.name"] = sizeFilter;
+    }
 
-    const total = await Product.countDocuments(query);
-    const last_page = Math.ceil(total / options.limit);
-    
+    if (priceFilter) {
+      const [minPrice, maxPrice] = priceFilter.split("->");
+      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+        searchCondition.price = { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) };
+      } else {
+        return res.status(400).json({
+          message: "Giá trị minPrice hoặc maxPrice không hợp lệ",
+          data: [],
+        });
+      }
+    }
 
-    if (products.length === 0) {
+    if (materialFilter) {
+      searchCondition.material = materialFilter;
+    }
+
+    if (releaseDateFilter) {
+      const [startDate, endDate] = releaseDateFilter.split("->");
+      const parsedStartDate = new Date(startDate);
+      const parsedEndDate = new Date(endDate);
+
+      if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
+        searchCondition.release_date = { $gte: parsedStartDate, $lte: parsedEndDate };
+      } else {
+        return res.status(400).json({
+          message: "Giá trị startDate hoặc endDate không hợp lệ",
+          data: [],
+        });
+      }
+    }
+
+    const sortOptions = {};
+    if (sortOrder === "asc") {
+      sortOptions.price = 1;
+    } else if (sortOrder === "desc") {
+      sortOptions.price = -1;
+    } else {
+      sortOptions.price = 0;
+    }
+
+    const products = await Product.paginate(searchCondition, options);
+
+    if (products.docs.length === 0) {
       return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm",
+        message: "Không tìm thấy sản phẩm nào",
+        data: [],
       });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Lấy danh sách sản phẩm thành công",
-      last_page: last_page,
-      current_page: options.page,
-      data: products,
+    const productIds = products.docs.map((product) => product._id);
+
+    let populatedProducts = {};
+
+    if (sortOptions.price === 0) {
+      populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name");
+    } else {
+      populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").sort(sortOptions);
+    }
+    console.log(sortOptions);
+
+    let successMessage = "Hiển thị danh sách sản phẩm thành công.";
+
+    if (searchKeyword) {
+      successMessage += " Bạn đã tìm kiếm: " + searchKeyword +";";
+    }
+
+    if (categoryFilter) {
+      successMessage += " Bạn đã chọn danh mục: " + categoryFilter +";";
+    }
+
+    if (sizeFilter) {
+      successMessage += " Bạn đã chọn kích thước: " + sizeFilter +";";
+    }
+
+    if (priceFilter) {
+      successMessage += " Bạn đã chọn mức giá: " + priceFilter +";";
+    }
+
+    if (materialFilter) {
+      successMessage += " Bạn đã chọn chất liệu: " + materialFilter +";";
+    }
+
+    if (releaseDateFilter) {
+      successMessage += " Bạn đã chọn khoảng thời gian phát hành: " + releaseDateFilter +";";
+    }
+
+    let sortOrderMessage = "";
+    if (sortOrder === "asc") {
+      sortOrderMessage = "tăng dần";
+    } else if (sortOrder === "desc") {
+      sortOrderMessage = "giảm dần";
+    } else {
+      sortOrderMessage = "mặc định";
+    }
+
+    successMessage += " Bạn đã chọn thứ tự sắp xếp theo giá: " + sortOrderMessage;
+
+    return res.status(200).json({
+      message: successMessage,
+      totalProducts: products.totalDocs,
+      totalPages: products.totalPages,
+      currentPage: products.page,
+      data: populatedProducts,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Lấy danh sách sản phẩm thất bại",
+    return res.status(500).json({
+      message: "Lỗi hiển thị danh sách sản phẩm.",
       error: error.message,
     });
   }

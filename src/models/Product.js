@@ -1,8 +1,25 @@
 import mongoose from "mongoose";
 import timestampPlugin from "mongoose-timestamp";
-import mongoosePaginate from "mongoose-paginate-v2";
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 const { Schema } = mongoose;
+
+const SizeSchema = new Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    validate: {
+      validator: function (value) {
+        return value >= 0;
+      },
+      message: "Số lượng phải lớn hơn hoặc bằng 0",
+    },
+  },
+});
 
 const ProductSchema = new Schema({
   product_id: {
@@ -71,10 +88,7 @@ const ProductSchema = new Schema({
     type: Number,
     required: false,
   },
-  size: {
-    type: String,
-    required: false,
-  },
+  sizes: [SizeSchema],
   color: {
     type: String,
     required: false,
@@ -132,11 +146,10 @@ const ProductSchema = new Schema({
 });
 
 ProductSchema.plugin(timestampPlugin);
-
-// Indexes
-ProductSchema.index({ id: 1, name: "text" });
+ProductSchema.index({ product_id: 1, name: "text" });
 ProductSchema.index({ categoryId: 1 });
 ProductSchema.plugin(mongoosePaginate);
+
 const Product = mongoose.model("Product", ProductSchema);
 
 export default Product;
