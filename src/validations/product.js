@@ -12,7 +12,12 @@ const productValidator = Joi.object({
   quantity: Joi.number().min(0).required(),
   sold_count: Joi.number().default(0),
   rating: Joi.number(),
-  size: Joi.string(),
+  sizes: Joi.array().items(
+    Joi.object({
+      name: Joi.string().required(),
+      quantity: Joi.number().min(0).required(),
+    })
+  ),
   color: Joi.string().valid("red", "green", "blue", "yellow", "black", "white"),
   material: Joi.string(),
   release_date: Joi.date(),
