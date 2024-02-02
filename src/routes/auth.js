@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  createUser,
   deleteMoreUsers,
   deleteUser,
   forgotPassword,
@@ -30,7 +31,7 @@ const routerAuth = Router();
 //   },
 // });
 // const upload = multer({ storage: storage });
-
+routerAuth.post("/create",checkPermission, createUser);
 routerAuth.post("/signup", signUp);
 routerAuth.post("/signin", signIn);
 
