@@ -4,10 +4,9 @@ export const commentValidate = Joi.object({
     shoeId: Joi.string().required().messages({
       "any.required": 'Trường shoeId là bắt buộc'
     }),
-    rating: Joi.number().min(1).max(5).required().messages({
+    rating: Joi.number().min(1).max(5).messages({
       "number.min": 'Trường rating phải lớn hơn hoặc bằng 1',
       "number.max": 'Trường rating phải nhỏ hơn hoặc bằng 5',
-      "any.required": 'Trường rating là bắt buộc'
     }),
     content: Joi.string().required().messages({
       "string.empty": 'Trường content không được để trống',

@@ -14,7 +14,6 @@ const commentSchema = new mongoose.Schema(
     },
     rating: {
       type: Number,
-      require:true
     },
     content: {
       type: String,

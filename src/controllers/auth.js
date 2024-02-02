@@ -186,7 +186,13 @@ export const getAllUsers = async (req, res) => {
     const options = {
       page,
       limit: pageSize,
-      select: { password: 0 },
+      select: {
+        password: 0,
+        emailVerificationToken: 0,
+        emailVerificationExpiry: 0,
+        resetToken: 0,
+        resetTokenExpiry: 0,
+      },
     };
     const searchCondition = {
       $or: [
