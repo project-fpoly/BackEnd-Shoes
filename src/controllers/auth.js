@@ -103,15 +103,11 @@ export const createUser = async (req, res) => {
       email: req.body.email,
       password: hashPassword,
       role: req.body.role,
-      deliveryAddress: req.body.deliveryAddress.map((address) => ({
-        address,
-      })),
+      deliveryAddress: req.body.deliveryAddress,
       gender: req.body.gender,
       dateOfBirth: req.body.dateOfBirth,
       avt: req.body.avt,
-      phoneNumbers: req.body.phoneNumbers.map((phoneNumber) => ({
-        phoneNumber,
-      })),
+      phoneNumbers: req.body.phoneNumbers,
       emailVerified: true,
     });
 
@@ -362,9 +358,7 @@ export const updateUser = async (req, res) => {
           message: "Địa chỉ không được trùng lặp",
         });
       }
-      existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
-        address,
-      }));
+      existingUser.deliveryAddress = uniqueAddresses
     }
 
     //phone
@@ -391,9 +385,7 @@ export const updateUser = async (req, res) => {
           });
         }
       }
-      existingUser.phoneNumbers = uniquePhoneNumbers.map((phoneNumber) => ({
-        phoneNumber,
-      }));
+      existingUser.phoneNumbers = uniquePhoneNumbers
     }
 
     const savedUser = await existingUser.save();
