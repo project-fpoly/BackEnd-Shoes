@@ -1,24 +1,36 @@
 import { Router } from "express";
 
 import {
-  createCart,
-  getCartById,
+  addCartItems,
+  getCartItems,
+  removeCartItem,
+  createOrder,
+  getOrderById,
   updateCart,
   deleteCart,
-  getAllCarts,
-  getAllCartsAdmin,
+  getAllOrderAdmin,
   getCartByIdAdmin,
+  findUserOrders,
 } from "../controllers/Cart";
 import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders";
 import { checkPermissionManager } from "../middlewares/checkPermission";
 const routerCart = Router();
 
-routerCart.post("/carts", checkCreateOder, createCart);
-routerCart.get("/carts/:id", authenticateToken, getCartById);
-routerCart.get("/carts", authenticateToken, getAllCarts);
-routerCart.put("/carts/:id", checkPermissionManager, updateCart);
-routerCart.delete("/carts/:id", checkPermissionManager, deleteCart);
-routerCart.get("/admin/carts", checkPermissionManager, getAllCartsAdmin);
-routerCart.get("/admin/carts/:id", checkPermissionManager, getCartByIdAdmin);
+// cart
+// Carts
+routerCart.post("/carts", authenticateToken, addCartItems); // Thêm một mục hàng vào giỏ hàng
+routerCart.get("/carts", authenticateToken, getCartItems); // Lấy danh sách các mục hàng trong giỏ hàng
+routerCart.delete("/carts/:id", authenticateToken, removeCartItem); // Xóa một mục hàng khỏi giỏ hàng
+
+// Bills (Orders)
+routerCart.post("/bills", authenticateToken, createOrder); // Tạo một đơn hàng mới
+routerCart.get("/bills", authenticateToken, findUserOrders); // Lấy danh sách các đơn hàng của người dùng
+routerCart.get("/bills/:id", authenticateToken, getOrderById); // Lấy thông tin chi tiết của một đơn hàng
+routerCart.put("/bills/:id", checkPermissionManager, updateCart); // Cập nhật thông tin của một đơn hàng
+routerCart.delete("/bills/:id", checkPermissionManager, deleteCart); // Xóa một đơn hàng
+
+// Admin Routes
+routerCart.get("/admin/bills", checkPermissionManager, getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
+routerCart.get("/admin/bills/:id", checkPermissionManager, getCartByIdAdmin); // Lấy thông tin chi tiết của một đơn hàng (cho quản trị viên)
 
 export default routerCart;

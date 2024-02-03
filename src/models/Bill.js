@@ -1,19 +1,30 @@
 import mongoose, { Schema } from "mongoose";
 
+const cartItemSchema = new mongoose.Schema({
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: false,
+  },
+  quantity: {
+    type: Number,
+    required: false,
+  },
+});
 const BillSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.ObjectId,
-      required: true,
+      required: false,
       ref: "User",
     },
-    shoeId: [
-      {
-        type: mongoose.Schema.ObjectId,
-        required: true,
-        ref: "Shoe",
-      },
-    ],
+    cartItems: [cartItemSchema],
+    shippingAddress: {
+      email: { type: String },
+      fullname: { type: String },
+      address: { type: String },
+      phone: { type: Number },
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -23,23 +34,16 @@ const BillSchema = new mongoose.Schema(
     },
     totalPrice: {
       type: Number,
-      required: true,
+      required: false,
     },
     quantity: {
       type: Number,
     },
-    image: {
-      type: String,
-    },
-    date_buy: {
-      type: Date,
-    },
-    address: {
-      type: String,
-    },
     color: {
       type: String,
     },
+    isPaid: { type: Boolean, default: false },
+    isDelivered: { type: String, default: "Chờ xác nhận" },
   },
   { versionKey: false, timestamps: true }
 );

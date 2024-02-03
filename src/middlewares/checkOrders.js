@@ -2,7 +2,8 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 const { SECRET_CODE } = process.env;
-export const authenticateToken = (req, res, next) => {
+
+export const checkCreateOder = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   if (!authHeader) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -16,7 +17,7 @@ export const authenticateToken = (req, res, next) => {
     next();
   });
 };
-export function checkCreateOder(req, res, next) {
+export function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
 
   if (authHeader) {
