@@ -1,4 +1,5 @@
 import {
+  createValidator,
   signInValidator,
   signUpValidator,
   updateValidator,
@@ -50,6 +51,93 @@ export const sendEmail = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Đã xảy ra lỗi khi gửi email xác thực." });
+  }
+};
+export const createUser = async (req, res) => {
+  try {
+    const projection = {
+      password: 0,
+      _id: 0,
+      emailVerified: 0,
+      role: 0,
+      emailVerificationToken: 0,
+      emailVerificationExpiry: 0,
+      updatedAt: 0,
+      resetToken: 0,
+      resetTokenExpiry: 0,
+    };
+    const { error } = createValidator.validate(req.body, { abortEarly: false });
+    if (error) {
+      const errors = error.details.map((err) => err.message);
+      return res.status(400).json({
+        message: errors,
+      });
+    }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email: req.body.email });
+    if (existingEmail) {
+      return res.status(400).json({
+        message: "Email đã tồn tại.",
+      });
+    }
+
+    // Check for unique phone numbers
+    const existingPhoneNumbers = await User.find({
+      phoneNumbers: { $in: req.body.phoneNumbers },
+    });
+    if (existingPhoneNumbers.length > 0) {
+      return res.status(400).json({
+        message: "Số điện thoại đã tồn tại.",
+      });
+    }
+
+    // Check if the number of addresses is within the limit
+    if (req.body.deliveryAddress.length > 3) {
+      return res.status(400).json({
+        message: "Số địa chỉ không được vượt quá 3.",
+      });
+    }
+
+    // Check if the number of phone numbers is within the limit
+    if (req.body.phoneNumbers.length > 3) {
+      return res.status(400).json({
+        message: "Số điện thoại không được vượt quá 3.",
+      });
+    }
+
+    // Hash the password
+    const hashPassword = await bcryptjs.hash(req.body.password, 10);
+
+    // Create a new User instance
+    const newUser = new User({
+      userName: req.body.userName,
+      email: req.body.email,
+      password: hashPassword,
+      role: req.body.role,
+      deliveryAddress: req.body.deliveryAddress,
+      gender: req.body.gender,
+      dateOfBirth: req.body.dateOfBirth,
+      avt: req.body.avt,
+      phoneNumbers: req.body.phoneNumbers,
+      emailVerified: true,
+    });
+
+    // Save the new user to the database
+    await newUser.save();
+
+    const savedUser = await User.findOne({ _id: newUser._id }).select(projection);
+
+    res.status(200).json({
+      message: "Tạo User thành công",
+      newUser: savedUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
   }
 };
 
@@ -262,7 +350,9 @@ export const updateUser = async (req, res) => {
         message: "Người dùng không tồn tại",
       });
     }
-
+    // if (req.file) {
+    //   existingUser.avt = req.file.path;
+    // }
     existingUser.avt = updatedUser.avt || existingUser.avt;
     existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
@@ -282,9 +372,7 @@ export const updateUser = async (req, res) => {
           message: "Địa chỉ không được trùng lặp",
         });
       }
-      existingUser.deliveryAddress = uniqueAddresses.map((address) => ({
-        address,
-      }));
+      existingUser.deliveryAddress = uniqueAddresses
     }
 
     //phone
@@ -311,9 +399,7 @@ export const updateUser = async (req, res) => {
           });
         }
       }
-      existingUser.phoneNumbers = uniquePhoneNumbers.map((phoneNumber) => ({
-        phoneNumber,
-      }));
+      existingUser.phoneNumbers = uniquePhoneNumbers
     }
 
     const savedUser = await existingUser.save();
