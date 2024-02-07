@@ -54,6 +54,17 @@ export const sendEmail = async (req, res) => {
 };
 export const createUser = async (req, res) => {
   try {
+    const projection = {
+      password: 0,
+      _id: 0,
+      emailVerified: 0,
+      role: 0,
+      emailVerificationToken: 0,
+      emailVerificationExpiry: 0,
+      updatedAt: 0,
+      resetToken: 0,
+      resetTokenExpiry: 0,
+    };
     const { error } = createValidator.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((err) => err.message);
@@ -114,9 +125,11 @@ export const createUser = async (req, res) => {
     // Save the new user to the database
     await newUser.save();
 
+    const savedUser = await User.findOne({ _id: newUser._id }).select(projection);
+
     res.status(200).json({
       message: "Tạo User thành công",
-      newUser,
+      newUser: savedUser,
     });
   } catch (error) {
     console.error(error);
