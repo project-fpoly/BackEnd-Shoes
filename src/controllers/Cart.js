@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import { Cart, CartItem } from "../models/Cart";
-import User from "../models/User";
-import { cartSchema } from "../validations/cart";
+import { validateCart } from "../validations/cart";
 import nodemailer from "nodemailer";
 import Product from "../models/Product";
 import Bill from "../models/Bill";
@@ -14,9 +13,7 @@ const addCartItems = async (req, res) => {
     const quantity = req.body.quantity;
     const product = req.body.product;
     const userId = req.user?._id;
-    // console.log(product);
-    const productModel = await Product.findById(product);
-    // console.log(productModel.price);
+
     let cart;
 
     if (userId) {
@@ -27,6 +24,7 @@ const addCartItems = async (req, res) => {
         cart = new Cart({
           user: userId,
           cartItems: [],
+          totalPrice: 0, // Thêm trường totalPrice vào cart
         });
       }
     } else {
@@ -36,9 +34,19 @@ const addCartItems = async (req, res) => {
       if (!cart) {
         cart = {
           cartItems: [],
+          totalPrice: 0, // Thêm trường totalPrice vào cart
         };
       }
     }
+
+    const productModel = await Product.findById(product);
+
+    if (!productModel) {
+      return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
+    }
+
+    const productPrice = productModel.price;
+    const productImage = productModel.images;
 
     const existingCartItem = cart.cartItems.find(
       (item) => item.product.toString() === product
@@ -47,14 +55,23 @@ const addCartItems = async (req, res) => {
     if (existingCartItem) {
       // Tăng số lượng nếu sản phẩm đã tồn tại trong giỏ hàng
       existingCartItem.quantity += quantity;
+      existingCartItem.price = productPrice * existingCartItem.quantity;
     } else {
       // Thêm sản phẩm mới vào giỏ hàng
       const newCartItem = {
         product: product,
         quantity: quantity,
+        price: productPrice * quantity,
+        images: productImage,
       };
       cart.cartItems.push(newCartItem);
     }
+
+    // Cập nhật tổng tiền trong giỏ hàng
+    cart.totalPrice = 0;
+    cart.cartItems.forEach((item) => {
+      cart.totalPrice += item.price;
+    });
 
     if (!userId) {
       // Lưu giỏ hàng vào session storage khi người dùng không đăng nhập
@@ -63,7 +80,9 @@ const addCartItems = async (req, res) => {
       await cart.save();
     }
 
-    res.status(200).json({ message: "Sản phẩm đã được thêm vào giỏ hàng" });
+    res
+      .status(200)
+      .json({ message: "Sản phẩm đã được thêm vào giỏ hàng", cart });
   } catch (error) {
     res
       .status(500)
@@ -75,10 +94,10 @@ const addCartItems = async (req, res) => {
 const createOrder = async (req, res) => {
   try {
     const { shippingAddress } = req.body;
-    // console.log("req.user", req);
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
-    // console.log("userId:", userId);
+    // const productModel = await Product.findById(product);
+    // console.log(productModel);
     let cart;
 
     if (userId) {
@@ -94,23 +113,21 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ error: "Giỏ hàng trống" });
     }
 
-    // Tạo đơn hàng từ giỏ hàng
+    // Tạo đơn hàng từ giỏ hàng và sử dụng trường totalPrice từ giỏ hàng
     const order = new Bill({
       user: userId,
       cartItems: [
         ...cart.cartItems.map((item) => ({
           product: item.product,
           quantity: item.quantity,
+          price: item.price,
+          images: item.images,
         })),
       ],
       shippingAddress,
+      totalPrice: cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
     });
-    // const a = cart.cartItems.map((item) => ({
-    //   product: item.product,
-    //   quantity: item.quantity,
-    // }));
-    // console.log(cart.cartItems);
-    // console.log(order);
+
     if (userEmail) {
       const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -137,7 +154,6 @@ const createOrder = async (req, res) => {
     }
 
     await order.save();
-    // console.log(order);
 
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
     if (userId) {
@@ -151,13 +167,6 @@ const createOrder = async (req, res) => {
     res
       .status(200)
       .json({ message: "Đơn hàng đã được tạo thành công", data: order });
-    if (userId) {
-      await Cart.findByIdAndDelete(cart._id);
-    } else {
-      req.session.cart = {
-        cartItems: [],
-      };
-    }
   } catch (error) {
     res.status(500).json({ error: "Đã xảy ra lỗi khi tạo đơn hàng" });
     console.log(error);
@@ -249,25 +258,16 @@ const removeCartItem = async (req, res) => {
 const findUserOrders = async (req, res) => {
   try {
     const userId = req.user?._id;
-    const {
-      page = 1,
-      limit = 10,
-      startDay,
-      endDay,
-      startMonth,
-      endMonth,
-      startYear,
-      endYear,
-    } = req.query;
+    const { page = 1, limit = 10, start, end } = req.query;
     let query = {};
 
     if (!userId) {
       return res.status(400).json({ error: "Người dùng chưa đăng nhập" });
     }
 
-    if (startDay && endDay && startMonth && endMonth && startYear && endYear) {
-      const startDate = new Date(`${startYear}-${startMonth}-${startDay}`);
-      const endDate = new Date(`${endYear}-${endMonth}-${endDay}`);
+    if (start && end) {
+      const startDate = new Date(`${start}T00:00:00.000Z`);
+      const endDate = new Date(`${end}T23:59:59.999Z`);
 
       query.createdAt = { $gte: startDate, $lte: endDate };
     }
@@ -295,52 +295,6 @@ const findUserOrders = async (req, res) => {
     console.log(error);
   }
 };
-const getAllOrderAdmin = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      startDay,
-      endDay,
-      startMonth,
-      endMonth,
-      startYear,
-      endYear,
-    } = req.query;
-
-    let query = {};
-
-    // Nếu có giá trị của startDay, endDay, startMonth, startYear, endMonth và endYear được truyền vào, thực hiện tìm kiếm theo khoảng thời gian cụ thể
-    if (startDay && endDay && startMonth && endMonth && startYear && endYear) {
-      const startDate = new Date(`${startYear}-${startMonth}-${startDay}`);
-      const endDate = new Date(`${endYear}-${endMonth}-${endDay}`);
-
-      query.createdAt = { $gte: startDate, $lte: endDate };
-    }
-
-    // Đếm tổng số giỏ hàng
-    const totalOrders = await Bill.countDocuments(query);
-
-    // Lấy giỏ hàng theo trang và số lượng giới hạn, sắp xếp theo thời gian tạo giảm dần
-    const orders = await Bill.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
-
-    res.json({
-      carts,
-      pagination: {
-        totalOrders,
-        totalPages: Math.ceil(totalOrders / limit),
-        currentPage: parseInt(page),
-        limit: parseInt(limit),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-// Lấy một giỏ hàng theo ID của user
 const getOrderById = async (req, res) => {
   try {
     const { _id: userId } = req.user;
@@ -356,6 +310,40 @@ const getOrderById = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+const getAllOrderAdmin = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, start, end } = req.query;
+    let query = {};
+
+    if (start && end) {
+      const startDate = new Date(`${start}T00:00:00.000Z`);
+      const endDate = new Date(`${end}T23:59:59.999Z`);
+
+      query.createdAt = { $gte: startDate, $lte: endDate };
+    }
+
+    const totalOrders = await Bill.countDocuments(query);
+
+    const orders = await Bill.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      orders,
+      pagination: {
+        totalOrders,
+        totalPages: Math.ceil(totalOrders / limit),
+        currentPage: parseInt(page),
+        limit: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+// Lấy một giỏ hàng theo ID của user
+
 // Lấy một giỏ hàng theo ID của user dành cho admin
 
 const getCartByIdAdmin = async (req, res) => {
@@ -379,7 +367,7 @@ const updateCart = async (req, res) => {
     const updatedCartData = req.body;
 
     // Kiểm tra hợp lệ dữ liệu đầu vào
-    const { error } = cartSchema.validate(updatedCartData);
+    const { error } = validateCart.validate(updatedCartData);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -405,13 +393,17 @@ const deleteCart = async (req, res) => {
   try {
     const { id: cartId } = req.params;
 
-    const deletedCart = await Cart.findOneAndDelete({
-      _id: cartId,
-    });
+    const cart = await Cart.findOne({ _id: cartId });
 
-    if (!deletedCart) {
+    if (!cart) {
       return res.status(404).json({ error: "Cart not found" });
     }
+
+    if (cart.isDelivered !== "Chờ xác nhận") {
+      return res.status(400).json({ error: "You cannot delete this cart" });
+    }
+
+    const deletedCart = await Cart.findOneAndDelete({ _id: cartId });
 
     res.json({ message: "Cart deleted", deletedCart });
   } catch (error) {

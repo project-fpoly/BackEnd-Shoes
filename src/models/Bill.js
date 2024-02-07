@@ -20,10 +20,10 @@ const BillSchema = new mongoose.Schema(
     },
     cartItems: [cartItemSchema],
     shippingAddress: {
-      email: { type: String },
-      fullname: { type: String },
-      address: { type: String },
-      phone: { type: Number },
+      email: { type: String, required: true },
+      fullname: { type: String, required: true },
+      address: { type: String, required: true },
+      phone: { type: Number, required: true },
     },
     createdAt: {
       type: Date,

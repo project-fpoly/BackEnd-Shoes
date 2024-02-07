@@ -10,9 +10,12 @@ const cartItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+  price: {
+    type: Number,
+    required: false,
+  },
+  images: {
+    type: Array,
     required: false,
   },
 });
@@ -20,17 +23,13 @@ const cartItemSchema = new mongoose.Schema({
 const cartSchema = mongoose.Schema(
   {
     cartItems: [cartItemSchema],
-    shippingAddress: {
-      email: { type: String },
-      fullname: { type: String },
-      address: { type: String },
-      phone: { type: Number },
-    },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: false,
     },
+    totalPrice: { type: Number, default: 0 },
   },
   {
     timestamps: true,
