@@ -208,7 +208,7 @@ const getAllProduct = async (req, res) => {
     } else {
       populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").sort(sortOptions);
     }
-    console.log(sortOptions);
+   
 
     let successMessage = "Hiển thị danh sách sản phẩm thành công.";
 
