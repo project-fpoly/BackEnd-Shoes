@@ -16,6 +16,7 @@ export const createComment = async (req, res) => {
     const body = req.body;
     console.log("asdsaas", body);
     const { error } = commentValidate.validate(body, { abortEarly: false });
+    console.log(error);
     if (error) {
       return res.status(400).json({
         message: error.message,

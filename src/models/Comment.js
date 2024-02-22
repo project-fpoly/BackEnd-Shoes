@@ -12,6 +12,9 @@ const commentSchema = new mongoose.Schema(
       required: true,
       ref: "User",
     },
+    rating: {
+      type: Number,
+    },
     content: {
       type: String,
       required: true,
