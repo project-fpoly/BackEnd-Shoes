@@ -45,7 +45,8 @@ export const sendEmail = async (req, res) => {
       { new: true }
     );
 
-    res.status(200)
+    res
+      .status(200)
       .json({ message: "Mã xác thực đã được gửi đến email của bạn." });
   } catch (error) {
     console.error(error);
@@ -91,20 +92,6 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // Check if the number of addresses is within the limit
-    if (req.body.deliveryAddress.length > 3) {
-      return res.status(400).json({
-        message: "Số địa chỉ không được vượt quá 3.",
-      });
-    }
-
-    // Check if the number of phone numbers is within the limit
-    if (req.body.phoneNumbers.length > 3) {
-      return res.status(400).json({
-        message: "Số điện thoại không được vượt quá 3.",
-      });
-    }
-
     // Hash the password
     const hashPassword = await bcryptjs.hash(req.body.password, 10);
 
@@ -125,7 +112,9 @@ export const createUser = async (req, res) => {
     // Save the new user to the database
     await newUser.save();
 
-    const savedUser = await User.findOne({ _id: newUser._id }).select(projection);
+    const savedUser = await User.findOne({ _id: newUser._id }).select(
+      projection
+    );
 
     res.status(200).json({
       message: "Tạo User thành công",
@@ -346,8 +335,21 @@ export const updateUser = async (req, res) => {
         message: errors,
       });
     }
+
     const userId = req.params.userId;
     const updatedUser = req.body;
+
+    // Kiểm tra số điện thoại đã tồn tại cho người dùng khác
+    const isPhoneNumberExist = await User.exists({
+      _id: { $ne: userId }, // Loại bỏ người dùng đang cập nhật khỏi kiểm tra
+      phoneNumbers: updatedUser.phoneNumbers
+    });
+
+    if (isPhoneNumberExist) {
+      return res.status(400).json({
+        message: "Số điện thoại đã tồn tại trong cơ sở dữ liệu cho người dùng khác",
+      });
+    }
 
     const existingUser = await User.findById(userId);
     if (!existingUser) {
@@ -355,57 +357,14 @@ export const updateUser = async (req, res) => {
         message: "Người dùng không tồn tại",
       });
     }
-    // if (req.file) {
-    //   existingUser.avt = req.file.path;
-    // }
+
+    // Tiếp tục với quá trình cập nhật thông tin người dùng...
     existingUser.avt = updatedUser.avt || existingUser.avt;
     existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
-    existingUser.dateOfBirth =
-      updatedUser.dateOfBirth || existingUser.dateOfBirth;
-
-    //deliveryAddress
-    if (updatedUser.deliveryAddress) {
-      if (updatedUser.deliveryAddress.length > 3) {
-        return res.status(400).json({
-          message: "Chỉ được phép cung cấp tối đa 3 địa chỉ",
-        });
-      }
-      const uniqueAddresses = [...new Set(updatedUser.deliveryAddress)];
-      if (uniqueAddresses.length !== updatedUser.deliveryAddress.length) {
-        return res.status(400).json({
-          message: "Địa chỉ không được trùng lặp",
-        });
-      }
-      existingUser.deliveryAddress = uniqueAddresses
-    }
-
-    //phone
-    if (updatedUser.phoneNumbers) {
-      if (updatedUser.phoneNumbers.length > 3) {
-        return res.status(400).json({
-          message: "Chỉ được phép cung cấp tối đa 3 số điện thoại",
-        });
-      }
-      const uniquePhoneNumbers = [...new Set(updatedUser.phoneNumbers)];
-      if (uniquePhoneNumbers.length !== updatedUser.phoneNumbers.length) {
-        return res.status(400).json({
-          message: "Số điện thoại không được trùng lặp",
-        });
-      }
-      for (const phoneNumber of uniquePhoneNumbers) {
-        const phoneExist = await User.findOne({
-          "phoneNumbers.phoneNumber": phoneNumber,
-          _id: { $ne: userId },
-        });
-        if (phoneExist) {
-          return res.status(400).json({
-            message: `Số điện thoại ${phoneNumber} đã được sử dụng bởi người dùng khác`,
-          });
-        }
-      }
-      existingUser.phoneNumbers = uniquePhoneNumbers
-    }
+    existingUser.dateOfBirth = updatedUser.dateOfBirth || existingUser.dateOfBirth;
+    existingUser.deliveryAddress = updatedUser.deliveryAddress || existingUser.deliveryAddress;
+    existingUser.phoneNumbers = updatedUser.phoneNumbers || existingUser.phoneNumbers;
 
     const savedUser = await existingUser.save();
 

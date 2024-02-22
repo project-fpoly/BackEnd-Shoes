@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
       type: String,
     },
     deliveryAddress: {
-      type: Array,
+      type: String,
     },
     gender: {
       type: String,
@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
       type: String,
     },
     phoneNumbers: {
-        type: Array
+        type: String
     },
     lastActivity: {
         type: Date,
