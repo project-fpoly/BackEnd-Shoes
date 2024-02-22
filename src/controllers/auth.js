@@ -465,27 +465,28 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-export const deleteUser = async (req, res) => {
-  try {
-    const { _id } = req.user;
-    const deletedUser = await User.findByIdAndDelete(_id);
+// export const deleteUser = async (req, res) => {
+//   try {
+//     const { _id } = req.user;
+//     const deletedUser = await User.findByIdAndDelete(_id);
 
-    if (!deletedUser) {
-      return res.status(404).json({
-        message: "Không tìm thấy người dùng.",
-      });
-    }
+//     if (!deletedUser) {
+//       return res.status(404).json({
+//         message: "Không tìm thấy người dùng.",
+//       });
+//     }
 
-    return res.status(200).json({
-      message: "Xoá người dùng thành công.",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      name: error.name,
-      message: error.message,
-    });
-  }
-};
+//     return res.status(200).json({
+//       message: "Xoá người dùng thành công.",
+//     });
+//   } catch (error) {
+//         return res.status(500).json({
+//       name: error.name,
+//       message: error.message,
+//     });
+//   }
+// };
+
 
 export const deleteMoreUsers = async (req, res) => {
   try {
