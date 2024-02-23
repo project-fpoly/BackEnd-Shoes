@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   createUser,
   deleteMoreUsers,
-  deleteUser,
+  
   forgotPassword,
   getAllUsers,
   getOneUser,
