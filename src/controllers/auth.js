@@ -293,7 +293,14 @@ export const getAllUsers = async (req, res) => {
 
 export const getOneUser = async (req, res) => {
   try {
-    const { _id } = req.user;
+    let userId;
+
+    if (req.params && req.params.userId) {
+      userId = req.params.userId;
+    } else {
+      const { _id } = req.user;
+      userId = _id;
+    }
 
     const projection = {
       password: 0,
@@ -307,7 +314,7 @@ export const getOneUser = async (req, res) => {
       resetTokenExpiry: 0,
     };
 
-    const user = await User.findById(_id, projection);
+    const user = await User.findById(userId, projection);
 
     if (!user) {
       return res.status(404).json({
