@@ -2,7 +2,6 @@ import { Router } from "express";
 import {
   createUser,
   deleteMoreUsers,
-  deleteUser,
   forgotPassword,
   getAllUsers,
   getOneUser,
@@ -52,8 +51,8 @@ routerAuth.delete("/more-users", checkPermission, deleteMoreUsers);
 
 // routerAuth.delete("/users/:userId", deleteUser);
 routerAuth.get("/user", checkPermissionMember, getOneUser);
-routerAuth.post("/forgot-password", checkPermissionMember, forgotPassword);
-routerAuth.post("/reset-password", checkPermissionMember, resetPassword);
+routerAuth.post("/forgot-password",forgotPassword);
+routerAuth.post("/reset-password",resetPassword);
 
 routerAuth.post("/send-email", sendEmail);
 routerAuth.post("/verify-email", verifyEmail);
