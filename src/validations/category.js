@@ -8,7 +8,7 @@ export const categorySchema = Joi.object({
             "any.required": "Trường tên là bắt buộc",
         }),
     description: Joi.string(),
-    image: Joi.string(),
+    imageUrl: Joi.string(),
     status: Joi.string().valid("active", "inactive").default("active"),
     viewCount: Joi.number().default(0),
 });
