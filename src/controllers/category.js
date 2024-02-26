@@ -8,7 +8,10 @@ const { SECRET_CODE } = process.env;
 export const getAllCategory = async (req, res) => {
     try {
         const options = { page: 1, limit: 10 };
-        const { keyword } = req.query;
+        const { page, limit, keyword } = req.query;
+
+        options.page = page ? parseInt(page) : options.page;
+        options.limit = limit ? parseInt(limit) : options.limit;
 
         let query = {};
         if (keyword) {
@@ -21,7 +24,7 @@ export const getAllCategory = async (req, res) => {
         }
 
         // Sắp xếp theo trường createdAt để đưa các danh mục mới nhất lên đầu
-        const sortedData = data.docs.sort((a, b) => b.createdAt - a.createdAt);
+        // const sortedData = data.docs.sort((a, b) => b.createdAt - a.createdAt);
 
         return res.status(200).json({
             message: "Lấy danh sách danh mục thành công",
@@ -34,7 +37,7 @@ export const getAllCategory = async (req, res) => {
             hasNextPage: data.hasNextPage,
             prevPage: data.prevPage,
             nextPage: data.nextPage,
-            data:data.docs
+            data: data.docs,
         });
     } catch (error) {
         return res.status(500).json({
