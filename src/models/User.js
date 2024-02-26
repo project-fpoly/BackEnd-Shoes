@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
       default: "member",
     },
     avt: {
-      type: String,
+      type: Object,
     },
     deliveryAddress: {
       type: String,

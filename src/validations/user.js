@@ -16,7 +16,7 @@ export const updateValidator = Joi.object({
   userName: Joi.string().min(6).max(255),
   gender: Joi.string().valid("male", "female", "other"),
   dateOfBirth: Joi.date().iso(),
-  avt: Joi.string(),
+  avt: Joi.object(),
   phoneNumbers: Joi.string().min(9).max(11),
 });
 export const createValidator = Joi.object({
@@ -27,6 +27,6 @@ export const createValidator = Joi.object({
   deliveryAddress: Joi.string().required(),
   gender: Joi.string().required().valid("male", "female", "other"),
   dateOfBirth: Joi.date().required().iso(),
-  avt: Joi.string().required(),
+  avt: Joi.object(),
   phoneNumbers: Joi.string().min(9).max(11).required(),
 });
