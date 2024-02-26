@@ -51,10 +51,10 @@ routerAuth.put("/users/:userId", updateUser);
 //chỉ admin mới có quyền xoá hàng loạt
 routerAuth.delete("/more-users", deleteMoreUsers);
 
-// routerAuth.delete("/users", checkPermissionMember, deleteUser);
+// routerAuth.delete("/users/:userId", deleteUser);
 routerAuth.get("/user/:userId", checkPermissionMember, getOneUser);
-routerAuth.post("/forgot-password", checkPermissionMember, forgotPassword);
-routerAuth.post("/reset-password", checkPermissionMember, resetPassword);
+routerAuth.post("/forgot-password", forgotPassword);
+routerAuth.post("/reset-password", resetPassword);
 
 routerAuth.post("/send-email", sendEmail);
 routerAuth.post("/verify-email", verifyEmail);
