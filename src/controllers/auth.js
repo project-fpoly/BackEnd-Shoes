@@ -367,9 +367,16 @@ export const updateUser = async (req, res) => {
         message: "Người dùng không tồn tại",
       });
     }
+    // Kiểm tra xem người dùng đã cung cấp ảnh mới hay không
+    if (req.file) {
+      // Nếu có ảnh mới, cập nhật đường dẫn và public ID
+      existingUser.avt = {
+        url: req.file.path,
+        publicId: req.file.filename,
+      };
+    }
 
     // Tiếp tục với quá trình cập nhật thông tin người dùng...
-    existingUser.avt = updatedUser.avt || existingUser.avt;
     existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
     existingUser.dateOfBirth =
@@ -396,6 +403,7 @@ export const updateUser = async (req, res) => {
     });
   }
 };
+
 
 export const forgotPassword = async (req, res) => {
   try {

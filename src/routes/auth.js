@@ -37,16 +37,7 @@ routerAuth.post("/signin", signIn);
 // người quản lý mới có thể xem tất cả user và cập nhật
 routerAuth.get("/users", getAllUsers);
 
-// routerAuth.put(
-//   "/users/:userId",
-//   upload.single("avt"),
-//   checkPermissionManager,
-//   updateUser
-// );
-// routerAuth.post('/upload', upload.single('image'), (req, res) => {
-//   res.json({ imageUrl: req.file.path });
-// });
-routerAuth.put("/users/:userId", updateUser);
+routerAuth.put("/users/:userId",upload.single('avt'), updateUser);
 
 //chỉ admin mới có quyền xoá hàng loạt
 routerAuth.delete("/more-users", deleteMoreUsers);

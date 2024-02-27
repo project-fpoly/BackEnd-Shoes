@@ -16,9 +16,13 @@ export const updateValidator = Joi.object({
   userName: Joi.string().min(6).max(255),
   gender: Joi.string().valid("male", "female", "other"),
   dateOfBirth: Joi.date().iso(),
-  avt: Joi.object(),
+  avt: Joi.alternatives().try(
+    Joi.object(), // Cho phép là một đối tượng
+    Joi.string()   // Cho phép là một chuỗi
+  ),
   phoneNumbers: Joi.string().min(9).max(11),
 });
+
 export const createValidator = Joi.object({
   email: Joi.string().required().email(),
   password: Joi.string().required().min(6).max(255),
