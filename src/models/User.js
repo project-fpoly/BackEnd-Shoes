@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
     },
     emailVerificationToken: String,
     emailVerificationExpiry: Date,
+    resetToken: String,
+    resetTokenExpiry: Date,
     password: {
       type: String,
       required: true,
@@ -24,10 +26,10 @@ const userSchema = new mongoose.Schema({
       default: "member",
     },
     avt: {
-      type: String,
+      type: Object,
     },
     deliveryAddress: {
-      type: Array,
+      type: String,
     },
     gender: {
       type: String,
@@ -36,7 +38,7 @@ const userSchema = new mongoose.Schema({
       type: String,
     },
     phoneNumbers: {
-        type: Array
+        type: String
     },
     lastActivity: {
         type: Date,

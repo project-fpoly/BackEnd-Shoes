@@ -208,7 +208,7 @@ const getAllProduct = async (req, res) => {
     } else {
       populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").sort(sortOptions);
     }
-    console.log(sortOptions);
+   
 
     let successMessage = "Hiển thị danh sách sản phẩm thành công.";
 
@@ -251,7 +251,8 @@ const getAllProduct = async (req, res) => {
       message: successMessage,
       totalProducts: products.totalDocs,
       totalPages: products.totalPages,
-      currentPage: products.page,
+      page: products.page,
+      pageSize:pageSize,
       data: populatedProducts,
     });
   } catch (error) {

@@ -66,6 +66,7 @@ export const createUser = async (req, res) => {
       resetToken: 0,
       resetTokenExpiry: 0,
     };
+
     const { error } = createValidator.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((err) => err.message);
@@ -91,21 +92,8 @@ export const createUser = async (req, res) => {
         message: "Số điện thoại đã tồn tại.",
       });
     }
-
-    // Check if the number of addresses is within the limit
-    if (req.body.deliveryAddress.length > 3) {
-      return res.status(400).json({
-        message: "Số địa chỉ không được vượt quá 3.",
-      });
-    }
-
-    // Check if the number of phone numbers is within the limit
-    if (req.body.phoneNumbers.length > 3) {
-      return res.status(400).json({
-        message: "Số điện thoại không được vượt quá 3.",
-      });
-    }
-
+    let avatarUrl = { url: req.file.path, publicId: req.file.filename };
+    // Tiếp tục xử lý logic tạo user, sử dụng avatarUrl nếu ảnh đã được gửi lên thành công
     // Hash the password
     const hashPassword = await bcryptjs.hash(req.body.password, 10);
 
@@ -118,7 +106,7 @@ export const createUser = async (req, res) => {
       deliveryAddress: req.body.deliveryAddress,
       gender: req.body.gender,
       dateOfBirth: req.body.dateOfBirth,
-      avt: req.body.avt,
+      avt: avatarUrl, // Use the Cloudinary URL for the avatar
       phoneNumbers: req.body.phoneNumbers,
       emailVerified: true,
     });
@@ -126,7 +114,9 @@ export const createUser = async (req, res) => {
     // Save the new user to the database
     await newUser.save();
 
-    const savedUser = await User.findOne({ _id: newUser._id }).select(projection);
+    const savedUser = await User.findOne({ _id: newUser._id }).select(
+      projection
+    );
 
     res.status(200).json({
       message: "Tạo User thành công",
@@ -275,7 +265,13 @@ export const getAllUsers = async (req, res) => {
     const options = {
       page,
       limit: pageSize,
-      select: { password: 0 },
+      select: {
+        password: 0,
+        emailVerificationToken: 0,
+        emailVerificationExpiry: 0,
+        resetToken: 0,
+        resetTokenExpiry: 0,
+      },
     };
     const searchCondition = {
       $or: [
@@ -299,7 +295,14 @@ export const getAllUsers = async (req, res) => {
 
 export const getOneUser = async (req, res) => {
   try {
-    const { _id } = req.user;
+    let userId;
+
+    if (req.params && req.params.userId) {
+      userId = req.params.userId;
+    } else {
+      const { _id } = req.user;
+      userId = _id;
+    }
 
     const projection = {
       password: 0,
@@ -313,7 +316,7 @@ export const getOneUser = async (req, res) => {
       resetTokenExpiry: 0,
     };
 
-    const user = await User.findById(_id, projection);
+    const user = await User.findById(userId, projection);
 
     if (!user) {
       return res.status(404).json({
@@ -341,8 +344,22 @@ export const updateUser = async (req, res) => {
         message: errors,
       });
     }
+
     const userId = req.params.userId;
     const updatedUser = req.body;
+
+    // Kiểm tra số điện thoại đã tồn tại cho người dùng khác
+    const isPhoneNumberExist = await User.exists({
+      _id: { $ne: userId }, // Loại bỏ người dùng đang cập nhật khỏi kiểm tra
+      phoneNumbers: updatedUser.phoneNumbers,
+    });
+
+    if (isPhoneNumberExist) {
+      return res.status(400).json({
+        message:
+          "Số điện thoại đã tồn tại trong cơ sở dữ liệu cho người dùng khác",
+      });
+    }
 
     const existingUser = await User.findById(userId);
     if (!existingUser) {
@@ -350,57 +367,24 @@ export const updateUser = async (req, res) => {
         message: "Người dùng không tồn tại",
       });
     }
-    // if (req.file) {
-    //   existingUser.avt = req.file.path;
-    // }
-    existingUser.avt = updatedUser.avt || existingUser.avt;
+    // Kiểm tra xem người dùng đã cung cấp ảnh mới hay không
+    if (req.file) {
+      // Nếu có ảnh mới, cập nhật đường dẫn và public ID
+      existingUser.avt = {
+        url: req.file.path,
+        publicId: req.file.filename,
+      };
+    }
+
+    // Tiếp tục với quá trình cập nhật thông tin người dùng...
     existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
     existingUser.dateOfBirth =
       updatedUser.dateOfBirth || existingUser.dateOfBirth;
-
-    //deliveryAddress
-    if (updatedUser.deliveryAddress) {
-      if (updatedUser.deliveryAddress.length > 3) {
-        return res.status(400).json({
-          message: "Chỉ được phép cung cấp tối đa 3 địa chỉ",
-        });
-      }
-      const uniqueAddresses = [...new Set(updatedUser.deliveryAddress)];
-      if (uniqueAddresses.length !== updatedUser.deliveryAddress.length) {
-        return res.status(400).json({
-          message: "Địa chỉ không được trùng lặp",
-        });
-      }
-      existingUser.deliveryAddress = uniqueAddresses
-    }
-
-    //phone
-    if (updatedUser.phoneNumbers) {
-      if (updatedUser.phoneNumbers.length > 3) {
-        return res.status(400).json({
-          message: "Chỉ được phép cung cấp tối đa 3 số điện thoại",
-        });
-      }
-      const uniquePhoneNumbers = [...new Set(updatedUser.phoneNumbers)];
-      if (uniquePhoneNumbers.length !== updatedUser.phoneNumbers.length) {
-        return res.status(400).json({
-          message: "Số điện thoại không được trùng lặp",
-        });
-      }
-      for (const phoneNumber of uniquePhoneNumbers) {
-        const phoneExist = await User.findOne({
-          "phoneNumbers.phoneNumber": phoneNumber,
-          _id: { $ne: userId },
-        });
-        if (phoneExist) {
-          return res.status(400).json({
-            message: `Số điện thoại ${phoneNumber} đã được sử dụng bởi người dùng khác`,
-          });
-        }
-      }
-      existingUser.phoneNumbers = uniquePhoneNumbers
-    }
+    existingUser.deliveryAddress =
+      updatedUser.deliveryAddress || existingUser.deliveryAddress;
+    existingUser.phoneNumbers =
+      updatedUser.phoneNumbers || existingUser.phoneNumbers;
 
     const savedUser = await existingUser.save();
 
@@ -501,27 +485,27 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-export const deleteUser = async (req, res) => {
-  try {
-    const { _id } = req.user;
-    const deletedUser = await User.findByIdAndDelete(_id);
+// export const deleteUser = async (req, res) => {
+//   try {
+//     const { _id } = req.user;
+//     const deletedUser = await User.findByIdAndDelete(_id);
 
-    if (!deletedUser) {
-      return res.status(404).json({
-        message: "Không tìm thấy người dùng.",
-      });
-    }
+//     if (!deletedUser) {
+//       return res.status(404).json({
+//         message: "Không tìm thấy người dùng.",
+//       });
+//     }
 
-    return res.status(200).json({
-      message: "Xoá người dùng thành công.",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      name: error.name,
-      message: error.message,
-    });
-  }
-};
+//     return res.status(200).json({
+//       message: "Xoá người dùng thành công.",
+//     });
+//   } catch (error) {
+//         return res.status(500).json({
+//       name: error.name,
+//       message: error.message,
+//     });
+//   }
+// };
 
 export const deleteMoreUsers = async (req, res) => {
   try {

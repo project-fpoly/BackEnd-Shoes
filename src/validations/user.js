@@ -12,29 +12,25 @@ export const signInValidator = Joi.object({
   password: Joi.string().required().min(6).max(255),
 });
 export const updateValidator = Joi.object({
-    deliveryAddress: Joi.array()
-    .max(3)
-    .required(),
-  userName: Joi.string().required().min(6).max(255),
-  gender: Joi.string().required().valid("male", "female", "other"),
-  dateOfBirth: Joi.date().required().iso(),
-  avt: Joi.string().required(),
-  phoneNumbers: Joi.array()
-    .max(3)
-    .required()
+  deliveryAddress: Joi.string(),
+  userName: Joi.string().min(6).max(255),
+  gender: Joi.string().valid("male", "female", "other"),
+  dateOfBirth: Joi.date().iso(),
+  avt: Joi.alternatives().try(
+    Joi.object(), // Cho phép là một đối tượng
+    Joi.string()   // Cho phép là một chuỗi
+  ),
+  phoneNumbers: Joi.string().min(9).max(11),
 });
+
 export const createValidator = Joi.object({
   email: Joi.string().required().email(),
   password: Joi.string().required().min(6).max(255),
   userName: Joi.string().required().min(6).max(255),
   role: Joi.string(),
-  deliveryAddress: Joi.array()
-    .max(3)
-    .required(),
+  deliveryAddress: Joi.string().required(),
   gender: Joi.string().required().valid("male", "female", "other"),
   dateOfBirth: Joi.date().required().iso(),
-  avt: Joi.string().required(),
-  phoneNumbers: Joi.array()
-    .max(3)
-    .required()
+  avt: Joi.object(),
+  phoneNumbers: Joi.string().min(9).max(11).required(),
 });
