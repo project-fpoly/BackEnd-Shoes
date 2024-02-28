@@ -251,7 +251,8 @@ const getAllProduct = async (req, res) => {
       message: successMessage,
       totalProducts: products.totalDocs,
       totalPages: products.totalPages,
-      currentPage: products.page,
+      page: products.page,
+      pageSize:pageSize,
       data: populatedProducts,
     });
   } catch (error) {
