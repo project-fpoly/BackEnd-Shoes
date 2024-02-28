@@ -132,6 +132,8 @@ const getAllProduct = async (req, res) => {
     const viewsFilter = req.query.viewsFilter || "";
     const soldFilter = req.query.soldFilter || "";
     const saleFilter = req.query.soldFilter || "";
+    const rateFilter = req.query.rateFilter || "";
+
 
     const options = {
       page,
@@ -195,8 +197,11 @@ const getAllProduct = async (req, res) => {
     if (soldFilter) {
       searchCondition.sold_count = { $gte: parseInt(soldFilter) };
     }
-    if (saleFilterFilter) {
-      searchCondition.sale = { $gte: parseInt(soldFilter) };
+    if (saleFilter) {
+      searchCondition.sale = { $gte: parseInt(saleFilter) };
+    }
+    if (rateFilter) {
+      searchCondition.sale = { $gte: parseInt(rateFilter) };
     }
 
     const sortOptions = {};
@@ -223,6 +228,11 @@ const getAllProduct = async (req, res) => {
       sortOptions.sale = 1;
     } else if (sortOrder === "desc_sale") {
       sortOptions.sale = -1;
+    }
+    if (sortOrder === "asc_rate") {
+      sortOptions.rating = 1;
+    } else if (sortOrder === "desc_rate") {
+      sortOptions.rating = -1;
     }
 
 
@@ -273,12 +283,15 @@ const getAllProduct = async (req, res) => {
     if (releaseDateFilter) {
       successMessage += " Bạn đã chọn khoảng thời gian phát hành: " + releaseDateFilter + ";";
     }
+    if (colorFilter) {
+      successMessage += " Bạn đã chọn màu sắc của sản phẩm là: " + colorFilter + ";";
+    }
 
     let sortOrderMessage = "";
     if (sortOrder === "asc") {
-      sortOrderMessage = "tăng dần";
+      sortOrderMessage = "giá tăng dần";
     } else if (sortOrder === "desc") {
-      sortOrderMessage = "giảm dần";
+      sortOrderMessage = "giá giảm dần";
     } else if (sortOrder === "asc_views") {
       sortOrderMessage = "lượt xem tăng dần";
     } else if (sortOrder === "desc_views") {
@@ -287,16 +300,20 @@ const getAllProduct = async (req, res) => {
       sortOrderMessage = "số lượng đã bán tăng dần";
     } else if (sortOrder === "desc_sold") {
       sortOrderMessage = "số lượng đã bán giảm dần";
-    } else if (sortOrder === "asc_sold") {
-      sortOrderMessage = "Số % khuyến mãi tăng dần";
-    } else if (sortOrder === "desc_sold") {
-      sortOrderMessage = "Số % khuyến mãi bán giảm dần";
-    } else {
+    } else if (sortOrder === "asc_sale") {
+      sortOrderMessage = "Số % khuyến mãi giá bán tăng dần";
+    } else if (sortOrder === "desc_sale") {
+      sortOrderMessage = "Số % khuyến mãi giá bán giảm dần";
+    }else if (sortOrder === "asc_rate") {
+      sortOrderMessage = "Số lượt đánh giá sản phẩm tăng dần";
+    } else if (sortOrder === "desc_rate") {
+      sortOrderMessage = "Số lượt đánh giá sản phẩm giảm dần";
+    }  else {
       sortOrderMessage = "mặc định";
     }
 
 
-    successMessage += " Bạn đã chọn thứ tự sắp xếp theo giá: " + sortOrderMessage;
+    successMessage += " Bạn đã chọn thứ tự sắp xếp theo : " + sortOrderMessage;
 
     return res.status(200).json({
       message: successMessage,
