@@ -66,6 +66,7 @@ export const createUser = async (req, res) => {
       resetToken: 0,
       resetTokenExpiry: 0,
     };
+
     const { error } = createValidator.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((err) => err.message);
@@ -91,7 +92,8 @@ export const createUser = async (req, res) => {
         message: "Số điện thoại đã tồn tại.",
       });
     }
-
+    let avatarUrl = {url:req.file.path,publicId:req.file.filename};
+    // Tiếp tục xử lý logic tạo user, sử dụng avatarUrl nếu ảnh đã được gửi lên thành công
     // Hash the password
     const hashPassword = await bcryptjs.hash(req.body.password, 10);
 
@@ -104,7 +106,7 @@ export const createUser = async (req, res) => {
       deliveryAddress: req.body.deliveryAddress,
       gender: req.body.gender,
       dateOfBirth: req.body.dateOfBirth,
-      avt: req.body.avt,
+      avt: avatarUrl, // Use the Cloudinary URL for the avatar
       phoneNumbers: req.body.phoneNumbers,
       emailVerified: true,
     });
@@ -349,12 +351,13 @@ export const updateUser = async (req, res) => {
     // Kiểm tra số điện thoại đã tồn tại cho người dùng khác
     const isPhoneNumberExist = await User.exists({
       _id: { $ne: userId }, // Loại bỏ người dùng đang cập nhật khỏi kiểm tra
-      phoneNumbers: updatedUser.phoneNumbers
+      phoneNumbers: updatedUser.phoneNumbers,
     });
 
     if (isPhoneNumberExist) {
       return res.status(400).json({
-        message: "Số điện thoại đã tồn tại trong cơ sở dữ liệu cho người dùng khác",
+        message:
+          "Số điện thoại đã tồn tại trong cơ sở dữ liệu cho người dùng khác",
       });
     }
 
@@ -364,14 +367,24 @@ export const updateUser = async (req, res) => {
         message: "Người dùng không tồn tại",
       });
     }
+    // Kiểm tra xem người dùng đã cung cấp ảnh mới hay không
+    if (req.file) {
+      // Nếu có ảnh mới, cập nhật đường dẫn và public ID
+      existingUser.avt = {
+        url: req.file.path,
+        publicId: req.file.filename,
+      };
+    }
 
     // Tiếp tục với quá trình cập nhật thông tin người dùng...
-    existingUser.avt = updatedUser.avt || existingUser.avt;
     existingUser.userName = updatedUser.userName || existingUser.userName;
     existingUser.gender = updatedUser.gender || existingUser.gender;
-    existingUser.dateOfBirth = updatedUser.dateOfBirth || existingUser.dateOfBirth;
-    existingUser.deliveryAddress = updatedUser.deliveryAddress || existingUser.deliveryAddress;
-    existingUser.phoneNumbers = updatedUser.phoneNumbers || existingUser.phoneNumbers;
+    existingUser.dateOfBirth =
+      updatedUser.dateOfBirth || existingUser.dateOfBirth;
+    existingUser.deliveryAddress =
+      updatedUser.deliveryAddress || existingUser.deliveryAddress;
+    existingUser.phoneNumbers =
+      updatedUser.phoneNumbers || existingUser.phoneNumbers;
 
     const savedUser = await existingUser.save();
 
@@ -390,6 +403,7 @@ export const updateUser = async (req, res) => {
     });
   }
 };
+
 
 export const forgotPassword = async (req, res) => {
   try {

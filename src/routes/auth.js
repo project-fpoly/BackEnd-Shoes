@@ -17,37 +17,30 @@ import {
   checkPermissionManager,
   checkPermissionMember,
 } from "../middlewares/checkPermission";
-// import { CloudinaryStorage } from "multer-storage-cloudinary";
-// import cloudinary from "../configs/cloudinary";
-// import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../configs/cloudinary";
+import multer from "multer";
 
 const routerAuth = Router();
-// const storage = new CloudinaryStorage({
-//   cloudinary: cloudinary,
-//   params: {
-//     folder: "book",
-//     format: async (req, file) => "png",
-//   },
-// });
-// const upload = multer({ storage: storage });
-routerAuth.post("/create",checkPermission, createUser);
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "book",
+    format: async (req, file) => "png",
+  },
+});
+const upload = multer({ storage: storage });
+routerAuth.post("/create",upload.single('avt'), createUser);
 routerAuth.post("/signup", signUp);
 routerAuth.post("/signin", signIn);
 
 // người quản lý mới có thể xem tất cả user và cập nhật
-routerAuth.get("/users", checkPermissionManager, getAllUsers);
+routerAuth.get("/users", getAllUsers);
 
-// routerAuth.put(
-//   "/users/:userId",
-//   upload.single("avt"),
-//   checkPermissionManager,
-//   updateUser
-// );
-
-routerAuth.put("/users/:userId", checkPermissionManager, updateUser);
+routerAuth.put("/users/:userId",upload.single('avt'), updateUser);
 
 //chỉ admin mới có quyền xoá hàng loạt
-routerAuth.delete("/more-users", checkPermission, deleteMoreUsers);
+routerAuth.delete("/more-users", deleteMoreUsers);
 
 // routerAuth.delete("/users/:userId", deleteUser);
 routerAuth.get("/user/:userId", checkPermissionMember, getOneUser);
