@@ -31,12 +31,12 @@ const routerAuth = Router();
 //   },
 // });
 // const upload = multer({ storage: storage });
-routerAuth.post("/create",checkPermission, createUser);
+routerAuth.post("/create", checkPermission, createUser);
 routerAuth.post("/signup", signUp);
 routerAuth.post("/signin", signIn);
 
 // người quản lý mới có thể xem tất cả user và cập nhật
-routerAuth.get("/users", checkPermissionManager, getAllUsers);
+routerAuth.get("/users", getAllUsers);
 
 // routerAuth.put(
 //   "/users/:userId",

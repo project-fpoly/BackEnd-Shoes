@@ -6,8 +6,8 @@ import {
   removeCartItem,
   createOrder,
   getOrderById,
-  updateCart,
-  deleteCart,
+  updateOrder,
+  deleteOrder,
   getAllOrderAdmin,
   getCartByIdAdmin,
   findUserOrders,
@@ -26,11 +26,11 @@ routerCart.delete("/carts/:id", authenticateToken, removeCartItem); // Xóa mộ
 routerCart.post("/bills", authenticateToken, createOrder); // Tạo một đơn hàng mới
 routerCart.get("/bills", authenticateToken, findUserOrders); // Lấy danh sách các đơn hàng của người dùng
 routerCart.get("/bills/:id", authenticateToken, getOrderById); // Lấy thông tin chi tiết của một đơn hàng
-routerCart.put("/bills/:id", checkPermissionManager, updateCart); // Cập nhật thông tin của một đơn hàng
-routerCart.delete("/bills/:id", checkPermissionManager, deleteCart); // Xóa một đơn hàng
 
 // Admin Routes
-routerCart.get("/admin/bills", checkPermissionManager, getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
+routerCart.get("/admin/bills", getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
+routerCart.delete("/admin/bills/:id", deleteOrder); // Xóa một đơn hàng(cho quản trị viên)
+routerCart.put("/admin/bills/:id", updateOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
 routerCart.get("/admin/bills/:id", checkPermissionManager, getCartByIdAdmin); // Lấy thông tin chi tiết của một đơn hàng (cho quản trị viên)
 
 export default routerCart;

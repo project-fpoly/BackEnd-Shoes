@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 import { Cart, CartItem } from "../models/Cart";
-import { validateCart } from "../validations/cart";
+import { validateCart, validateCartItems } from "../validations/cart";
 import nodemailer from "nodemailer";
 import Product from "../models/Product";
 import Bill from "../models/Bill";
+import User from "../models/User";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
@@ -13,7 +14,11 @@ const addCartItems = async (req, res) => {
     const quantity = req.body.quantity;
     const product = req.body.product;
     const userId = req.user?._id;
-
+    const a = req.body;
+    const { error } = validateCartItems(a);
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
     let cart;
 
     if (userId) {
@@ -312,8 +317,11 @@ const getOrderById = async (req, res) => {
 };
 const getAllOrderAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 10, start, end } = req.query;
+    const { page = 1, limit = 10, start, end, search } = req.query;
     let query = {};
+    // const { _id: userId } = req.user;
+    // const userName = await User.findById(userId);
+    // console.log(userName);
 
     if (start && end) {
       const startDate = new Date(`${start}T00:00:00.000Z`);
@@ -321,9 +329,13 @@ const getAllOrderAdmin = async (req, res) => {
 
       query.createdAt = { $gte: startDate, $lte: endDate };
     }
-
+    if (search) {
+      query.$or = [
+        { payment_method: { $regex: search, $options: "i" } },
+        { isDelivered: { $regex: search, $options: "i" } },
+      ];
+    }
     const totalOrders = await Bill.countDocuments(query);
-
     const orders = await Bill.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -348,65 +360,64 @@ const getAllOrderAdmin = async (req, res) => {
 
 const getCartByIdAdmin = async (req, res) => {
   try {
-    const { id: cartId } = req.params;
-    const cart = await Cart.findById({ _id: cartId });
-    if (!cart) {
-      return res.status(404).json({ error: "Cart not found" });
+    const { id: orderId } = req.params;
+    const order = await Bill.findById({ _id: orderId });
+    if (!order) {
+      return res.status(404).json({ error: "order not found" });
     }
 
-    res.json(cart);
+    res.json(order);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-// Cập nhật một giỏ hàng theo ID
-const updateCart = async (req, res) => {
+// Cập nhật một đơn hàng theo ID
+const updateOrder = async (req, res) => {
   try {
-    const { _id: userId } = req.user;
-    const { id: cartId } = req.params;
+    // const { _id: userId } = req.user;
+    const { id } = req.params;
+    console.log(id);
     const updatedCartData = req.body;
-
+    // , user: userId.toString()
     // Kiểm tra hợp lệ dữ liệu đầu vào
-    const { error } = validateCart.validate(updatedCartData);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    // const { error } = validateCart.validate(updatedCartData);
+    // if (error) {
+    //   return res.status(400).json({ error: error.details[0].message });
+    // }
 
-    const updatedCart = await Cart.findByIdAndUpdate(
-      { _id: cartId, user: userId },
+    const updatedCart = await Bill.findByIdAndUpdate(
+      { _id: id },
       updatedCartData,
       { new: true }
     );
 
     if (!updatedCart) {
-      return res.status(404).json({ error: "Cart not found" });
+      return res.status(404).json({ error: "Order not found" });
     }
 
-    res.json({ message: "Update cart complete", updatedCart });
+    res.json({ message: "Update order complete", updatedCart });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: error.message });
   }
 };
 
 // Xóa một giỏ hàng theo ID
-const deleteCart = async (req, res) => {
+const deleteOrder = async (req, res) => {
   try {
-    const { id: cartId } = req.params;
+    const { id: orderId } = req.params;
+    console.log(orderId);
+    const order = await Bill.findById(orderId);
+    console.log(order);
 
-    const cart = await Cart.findOne({ _id: cartId });
-
-    if (!cart) {
-      return res.status(404).json({ error: "Cart not found" });
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
     }
 
-    if (cart.isDelivered !== "Chờ xác nhận") {
-      return res.status(400).json({ error: "You cannot delete this cart" });
-    }
+    const deleteOrder = await Bill.findByIdAndDelete(orderId);
 
-    const deletedCart = await Cart.findOneAndDelete({ _id: cartId });
-
-    res.json({ message: "Cart deleted", deletedCart });
+    res.json({ message: "Order deleted", deleteOrder });
   } catch (error) {
+    console.error("Error deleting order:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -417,8 +428,8 @@ export {
   removeCartItem,
   createOrder,
   getOrderById,
-  updateCart,
-  deleteCart,
+  updateOrder,
+  deleteOrder,
   getAllOrderAdmin,
   getCartByIdAdmin,
   findUserOrders,

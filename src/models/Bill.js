@@ -10,6 +10,18 @@ const cartItemSchema = new mongoose.Schema({
     type: Number,
     required: false,
   },
+  price: {
+    type: Number,
+    required: false,
+  },
+  images: {
+    type: Array,
+    required: false,
+  },
+  color: {
+    type: String,
+    required: false,
+  },
 });
 const BillSchema = new mongoose.Schema(
   {
@@ -31,6 +43,7 @@ const BillSchema = new mongoose.Schema(
     },
     payment_method: {
       type: String,
+      default: "Thanh toán tiền mặt",
     },
     totalPrice: {
       type: Number,
@@ -39,9 +52,7 @@ const BillSchema = new mongoose.Schema(
     quantity: {
       type: Number,
     },
-    color: {
-      type: String,
-    },
+
     isPaid: { type: Boolean, default: false },
     isDelivered: { type: String, default: "Chờ xác nhận" },
   },
