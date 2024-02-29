@@ -547,7 +547,12 @@ export const deleteMoreUsers = async (req, res) => {
         message: "Không tìm thấy người dùng nào để xoá.",
       });
     }
+    // Xoá các comment có userId trùng với userId bị xoá
+    await Comment.deleteMany({ userId: { $in: userIdsToDelete } });
 
+    // Xoá các notification có userId trùng với userId bị xoá
+    await Notification.deleteMany({ userId: { $in: userIdsToDelete } });
+    
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
       deletedCount: deletedUsers.deletedCount,
