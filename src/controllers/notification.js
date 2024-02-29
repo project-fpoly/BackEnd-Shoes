@@ -4,7 +4,7 @@ import { validationResult } from "express-validator";
 // Lấy tất cả thông báo
 export const getAllNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find();
+    const notifications = await Notification.find().sort({ createdAt: -1 });
     res.status(200).json(notifications);
   } catch (error) {
     res
@@ -15,6 +15,7 @@ export const getAllNotifications = async (req, res) => {
       });
   }
 };
+
 // Lấy thông báo theo user
 export const getUserNotifications = async (req, res) => {
   try {
