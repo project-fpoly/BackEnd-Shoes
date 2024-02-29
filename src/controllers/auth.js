@@ -517,6 +517,16 @@ export const deleteMoreUsers = async (req, res) => {
       });
     }
 
+    // Lấy thông tin người dùng đang thực hiện thao tác xoá
+    const currentUser = await User.findById(req.user._id);
+
+    // Kiểm tra xem người dùng hiện tại có role là "admin" không
+    if (currentUser && currentUser.role === "admin") {
+      return res.status(403).json({
+        message: "Bạn không có quyền xoá người dùng với role là admin.",
+      });
+    }
+
     // Lấy thông tin email của người dùng từ các IDs
     const usersToDelete = await User.find({ _id: { $in: userIdsToDelete } });
     const deletedUserEmails = usersToDelete.map(user => user.email);
@@ -524,8 +534,12 @@ export const deleteMoreUsers = async (req, res) => {
     // Thêm thông báo cho admin
     await createNotificationForAdmin(`Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${req.user.email}`, "user", req.user._id);
 
+    // Kiểm tra và loại bỏ người dùng có role là "admin" khỏi danh sách xoá
+    const usersToDeleteFiltered = usersToDelete.filter(user => user.role !== "admin");
+
+    // Thực hiện xoá người dùng
     const deletedUsers = await User.deleteMany({
-      _id: { $in: userIdsToDelete },
+      _id: { $in: usersToDeleteFiltered.map(user => user._id) },
     });
 
     if (deletedUsers.deletedCount === 0) {
@@ -545,3 +559,4 @@ export const deleteMoreUsers = async (req, res) => {
     });
   }
 };
+
