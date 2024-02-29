@@ -392,16 +392,15 @@ const deleteProduct = async (req, res) => {
         message: "Không tìm thấy sản phẩm"
       });
     }
-
     // Xóa sản phẩm khỏi danh mục liên quan
     await Category.updateMany({ product: req.params.id }, { $pull: { product: req.params.id } });
-    const productToDelete = await getDetailProduct(req.params.id);
+
     // Xóa sản phẩm   
     await Product.findByIdAndDelete(req.params.id);
-    
+
     // Thêm thông báo cho admin
-    await createNotificationForAdmin("Sản phẩm đã bị xoá", "product");
-    console.log(user);
+    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product",req.user._id);
+
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
       data: product
@@ -414,10 +413,11 @@ const deleteProduct = async (req, res) => {
     });
   }
 };
-const createNotificationForAdmin = async (message, type) => {
+
+const createNotificationForAdmin = async (message, type,_id) => {
   try {
     const newNotification = new Notification({
-      userId: '65dc1b1bbbce007ddb6e3871',
+      userId: _id,
       message,
       type,
       isRead: false,
@@ -426,7 +426,10 @@ const createNotificationForAdmin = async (message, type) => {
 
     await newNotification.save();
   } catch (error) {
-    console.error("Đã xảy ra lỗi khi tạo thông báo cho admin:", error.message);
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi tạo thông báo cho admin",
+      error: error.message
+    });
   }
 };
 export {

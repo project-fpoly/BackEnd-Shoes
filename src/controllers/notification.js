@@ -7,9 +7,31 @@ export const getAllNotifications = async (req, res) => {
     const notifications = await Notification.find();
     res.status(200).json(notifications);
   } catch (error) {
-    res.status(500).json({ message: "Đã xảy ra lỗi khi lấy thông báo", error: error.message });
+    res
+      .status(500)
+      .json({
+        message: "Đã xảy ra lỗi khi lấy thông báo",
+        error: error.message,
+      });
   }
 };
+// Lấy thông báo theo user
+export const getUserNotifications = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const notifications = await Notification.find({ userId: _id });
+    console.log(notifications);
+    res.status(200).json(notifications);
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: "Đã xảy ra lỗi khi lấy thông báo",
+        error: error.message,
+      });
+  }
+};
+
 
 // Tạo mới thông báo
 export const createNotification = async (req, res) => {
@@ -33,7 +55,12 @@ export const createNotification = async (req, res) => {
     const savedNotification = await newNotification.save();
     res.status(201).json(savedNotification);
   } catch (error) {
-    res.status(500).json({ message: "Đã xảy ra lỗi khi tạo mới thông báo", error: error.message });
+    res
+      .status(500)
+      .json({
+        message: "Đã xảy ra lỗi khi tạo mới thông báo",
+        error: error.message,
+      });
   }
 };
 
@@ -42,13 +69,24 @@ export const deleteNotification = async (req, res) => {
   const notificationId = req.params.notificationId;
 
   try {
-    const deletedNotification = await Notification.findByIdAndRemove(notificationId);
+    const deletedNotification = await Notification.findByIdAndRemove(
+      notificationId
+    );
     if (!deletedNotification) {
-      return res.status(404).json({ message: "Không tìm thấy thông báo để xóa" });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy thông báo để xóa" });
     }
 
-    res.status(200).json({ message: "Xóa thông báo thành công", deletedNotification });
+    res
+      .status(200)
+      .json({ message: "Xóa thông báo thành công", deletedNotification });
   } catch (error) {
-    res.status(500).json({ message: "Đã xảy ra lỗi khi xóa thông báo", error: error.message });
+    res
+      .status(500)
+      .json({
+        message: "Đã xảy ra lỗi khi xóa thông báo",
+        error: error.message,
+      });
   }
 };
