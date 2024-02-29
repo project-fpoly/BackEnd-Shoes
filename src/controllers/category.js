@@ -2,6 +2,7 @@ import Category from "../models/Category";
 import { categorySchema } from "../validations/category";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { createNotificationForAdmin } from "./notification";
 dotenv.config();
 
 const { SECRET_CODE } = process.env;
@@ -143,6 +144,8 @@ export const removeCategory = async (req, res) => {
                     message: "Xoá danh mục thất bại!",
                 });
             }
+            // Thêm thông báo cho admin
+            await createNotificationForAdmin(`danh mục ${data.name} đã bị xoá bởi ${req.user.email}`, "category",req.user._id);
 
             return res.status(200).json({
                 message: "Xoá danh mục thành công!",

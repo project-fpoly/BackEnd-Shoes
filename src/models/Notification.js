@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["user", "admin", "manager", "order", "promotion","product"],
+      enum: ["user", "admin", "manager", "order", "promotion","product","category"],
       required: true,
     },
     isRead: {

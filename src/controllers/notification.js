@@ -20,8 +20,7 @@ export const getUserNotifications = async (req, res) => {
   try {
     const { _id } = req.user;
     const notifications = await Notification.find({ userId: _id });
-    console.log(notifications);
-    res.status(200).json(notifications);
+     res.status(200).json(notifications);
   } catch (error) {
     res
       .status(500)
@@ -32,7 +31,24 @@ export const getUserNotifications = async (req, res) => {
   }
 };
 
+export const createNotificationForAdmin = async (message, type,_id) => {
+  try {
+    const newNotification = new Notification({
+      userId: _id,
+      message,
+      type,
+      isRead: false,
+      recipientType: "admin",
+    });
 
+    await newNotification.save();
+  } catch (error) {
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi tạo thông báo cho admin",
+      error: error.message
+    });
+  }
+};
 // Tạo mới thông báo
 export const createNotification = async (req, res) => {
   const { userId, message, type, isRead, recipientType } = req.body;

@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import transporter from "../configs/nodemailer";
+import { createNotificationForAdmin } from "./notification";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;
@@ -515,6 +516,13 @@ export const deleteMoreUsers = async (req, res) => {
         message: "Vui lòng cung cấp ít nhất một ID người dùng để xoá.",
       });
     }
+
+    // Lấy thông tin email của người dùng từ các IDs
+    const usersToDelete = await User.find({ _id: { $in: userIdsToDelete } });
+    const deletedUserEmails = usersToDelete.map(user => user.email);
+
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin(`Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${req.user.email}`, "user", req.user._id);
 
     const deletedUsers = await User.deleteMany({
       _id: { $in: userIdsToDelete },

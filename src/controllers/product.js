@@ -4,6 +4,7 @@ import multer from "multer";
 import Category from "../models/Category";
 import { isValid } from "date-fns";
 import Notification from "../models/Notification";
+import { createNotificationForAdmin } from "./notification";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -414,24 +415,6 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-const createNotificationForAdmin = async (message, type,_id) => {
-  try {
-    const newNotification = new Notification({
-      userId: _id,
-      message,
-      type,
-      isRead: false,
-      recipientType: "admin",
-    });
-
-    await newNotification.save();
-  } catch (error) {
-    return res.status(500).json({
-      message: "Đã xảy ra lỗi khi tạo thông báo cho admin",
-      error: error.message
-    });
-  }
-};
 export {
   addProduct,
   getAllProduct,
