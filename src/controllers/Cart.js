@@ -333,6 +333,9 @@ const getAllOrderAdmin = async (req, res) => {
       query.$or = [
         { payment_method: { $regex: search, $options: "i" } },
         { isDelivered: { $regex: search, $options: "i" } },
+        { "shippingAddress.fullname": { $regex: search, $options: "i" } },
+        { "shippingAddress.email": { $regex: search, $options: "i" } },
+        { "shippingAddress.address": { $regex: search, $options: "i" } },
       ];
     }
     const totalOrders = await Bill.countDocuments(query);
