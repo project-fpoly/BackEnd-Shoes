@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import transporter from "../configs/nodemailer";
+import { createNotificationForAdmin } from "./notification";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;
@@ -516,8 +517,37 @@ export const deleteMoreUsers = async (req, res) => {
       });
     }
 
+    // Lấy thông tin email và role của người dùng từ các IDs
+    const usersToDelete = await User.find({ _id: { $in: userIdsToDelete } });
+    const deletedUserEmails = usersToDelete.map((user) => user.email);
+
+    // Loại bỏ người dùng có role là "admin" khỏi danh sách xoá
+    const usersToDeleteFiltered = usersToDelete.filter(
+      (user) => user.role !== "admin"
+    );
+
+    // Kiểm tra xem có người dùng có role là "admin" trong danh sách xoá không
+    const hasAdminInList =
+      usersToDelete.length !== usersToDeleteFiltered.length;
+
+    if (hasAdminInList && currentUser.role !== "admin") {
+      return res.status(403).json({
+        message: "Bạn không có quyền xoá người dùng có role là admin.",
+      });
+    }
+
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin(
+      `Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${
+        req.user.email
+      }`,
+      "user",
+      req.user._id
+    );
+
+    // Thực hiện xoá người dùng
     const deletedUsers = await User.deleteMany({
-      _id: { $in: userIdsToDelete },
+      _id: { $in: usersToDeleteFiltered.map((user) => user._id) },
     });
 
     if (deletedUsers.deletedCount === 0) {
@@ -525,6 +555,12 @@ export const deleteMoreUsers = async (req, res) => {
         message: "Không tìm thấy người dùng nào để xoá.",
       });
     }
+
+    // // Xoá các comment có userId trùng với userId bị xoá
+    // await Comment.deleteMany({ userId: { $in: userIdsToDelete } });
+
+    // // Xoá các notification có userId trùng với userId bị xoá
+    // await Notification.deleteMany({ userId: { $in: userIdsToDelete } });
 
     return res.status(200).json({
       message: "Xoá người dùng thành công.",

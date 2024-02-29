@@ -40,7 +40,7 @@ routerAuth.get("/users", getAllUsers);
 routerAuth.put("/users/:userId", upload.single("avt"), updateUser);
 
 //chỉ admin mới có quyền xoá hàng loạt
-routerAuth.delete("/more-users", deleteMoreUsers);
+routerAuth.delete("/more-users",checkPermission, deleteMoreUsers);
 
 // routerAuth.delete("/users/:userId", deleteUser);
 routerAuth.get("/user/:userId", checkPermissionMember, getOneUser);

@@ -3,6 +3,8 @@ import productValidator from "../validations/Product";
 import multer from "multer";
 import Category from "../models/Category";
 import { isValid } from "date-fns";
+import Notification from "../models/Notification";
+import { createNotificationForAdmin } from "./notification";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -127,7 +129,13 @@ const getAllProduct = async (req, res) => {
     const priceFilter = req.query.priceFilter || "";
     const materialFilter = req.query.materialFilter || "";
     const releaseDateFilter = req.query.releaseDateFilter || "";
-    const sortOrder = req.query.sortOrder;
+    const sortOrder = req.query.sortOrder || "";
+    const colorFilter = req.query.colorFilter || "";
+    const viewsFilter = req.query.viewsFilter || "";
+    const soldFilter = req.query.soldFilter || "";
+    const saleFilter = req.query.soldFilter || "";
+    const rateFilter = req.query.rateFilter || "";
+
 
     const options = {
       page,
@@ -180,6 +188,23 @@ const getAllProduct = async (req, res) => {
         });
       }
     }
+    if (colorFilter) {
+      searchCondition.color = colorFilter;
+    }
+
+    if (viewsFilter) {
+      searchCondition.hits = { $gte: parseInt(viewsFilter) };
+    }
+
+    if (soldFilter) {
+      searchCondition.sold_count = { $gte: parseInt(soldFilter) };
+    }
+    if (saleFilter) {
+      searchCondition.sale = { $gte: parseInt(saleFilter) };
+    }
+    if (rateFilter) {
+      searchCondition.sale = { $gte: parseInt(rateFilter) };
+    }
 
     const sortOptions = {};
     if (sortOrder === "asc") {
@@ -189,6 +214,31 @@ const getAllProduct = async (req, res) => {
     } else {
       sortOptions.price = 0;
     }
+    if (sortOrder === "asc_views") {
+      sortOptions.views = 1;
+    } else if (sortOrder === "desc_views") {
+      sortOptions.views = -1;
+    }
+
+    if (sortOrder === "asc_sold") {
+      sortOptions.sold = 1;
+    } else if (sortOrder === "desc_sold") {
+      sortOptions.sold = -1;
+    }
+
+    if (sortOrder === "asc_sale") {
+      sortOptions.sale = 1;
+    } else if (sortOrder === "desc_sale") {
+      sortOptions.sale = -1;
+    }
+    if (sortOrder === "asc_rate") {
+      sortOptions.rating = 1;
+    } else if (sortOrder === "desc_rate") {
+      sortOptions.rating = -1;
+    }
+
+
+
 
     const products = await Product.paginate(searchCondition, options);
 
@@ -208,51 +258,71 @@ const getAllProduct = async (req, res) => {
     } else {
       populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").sort(sortOptions);
     }
-   
+
 
     let successMessage = "Hiển thị danh sách sản phẩm thành công.";
 
     if (searchKeyword) {
-      successMessage += " Bạn đã tìm kiếm: " + searchKeyword +";";
+      successMessage += " Bạn đã tìm kiếm: " + searchKeyword + ";";
     }
 
     if (categoryFilter) {
-      successMessage += " Bạn đã chọn danh mục: " + categoryFilter +";";
+      successMessage += " Bạn đã chọn danh mục: " + categoryFilter + ";";
     }
 
     if (sizeFilter) {
-      successMessage += " Bạn đã chọn kích thước: " + sizeFilter +";";
+      successMessage += " Bạn đã chọn kích thước: " + sizeFilter + ";";
     }
 
     if (priceFilter) {
-      successMessage += " Bạn đã chọn mức giá: " + priceFilter +";";
+      successMessage += " Bạn đã chọn mức giá: " + priceFilter + ";";
     }
 
     if (materialFilter) {
-      successMessage += " Bạn đã chọn chất liệu: " + materialFilter +";";
+      successMessage += " Bạn đã chọn chất liệu: " + materialFilter + ";";
     }
 
     if (releaseDateFilter) {
-      successMessage += " Bạn đã chọn khoảng thời gian phát hành: " + releaseDateFilter +";";
+      successMessage += " Bạn đã chọn khoảng thời gian phát hành: " + releaseDateFilter + ";";
+    }
+    if (colorFilter) {
+      successMessage += " Bạn đã chọn màu sắc của sản phẩm là: " + colorFilter + ";";
     }
 
     let sortOrderMessage = "";
     if (sortOrder === "asc") {
-      sortOrderMessage = "tăng dần";
+      sortOrderMessage = "giá tăng dần";
     } else if (sortOrder === "desc") {
-      sortOrderMessage = "giảm dần";
-    } else {
+      sortOrderMessage = "giá giảm dần";
+    } else if (sortOrder === "asc_views") {
+      sortOrderMessage = "lượt xem tăng dần";
+    } else if (sortOrder === "desc_views") {
+      sortOrderMessage = "lượt xem giảm dần";
+    } else if (sortOrder === "asc_sold") {
+      sortOrderMessage = "số lượng đã bán tăng dần";
+    } else if (sortOrder === "desc_sold") {
+      sortOrderMessage = "số lượng đã bán giảm dần";
+    } else if (sortOrder === "asc_sale") {
+      sortOrderMessage = "Số % khuyến mãi giá bán tăng dần";
+    } else if (sortOrder === "desc_sale") {
+      sortOrderMessage = "Số % khuyến mãi giá bán giảm dần";
+    }else if (sortOrder === "asc_rate") {
+      sortOrderMessage = "Số lượt đánh giá sản phẩm tăng dần";
+    } else if (sortOrder === "desc_rate") {
+      sortOrderMessage = "Số lượt đánh giá sản phẩm giảm dần";
+    }  else {
       sortOrderMessage = "mặc định";
     }
 
-    successMessage += " Bạn đã chọn thứ tự sắp xếp theo giá: " + sortOrderMessage;
+
+    successMessage += " Bạn đã chọn thứ tự sắp xếp theo : " + sortOrderMessage;
 
     return res.status(200).json({
       message: successMessage,
       totalProducts: products.totalDocs,
       totalPages: products.totalPages,
       page: products.page,
-      pageSize:pageSize,
+      pageSize: pageSize,
       data: populatedProducts,
     });
   } catch (error) {
@@ -323,12 +393,14 @@ const deleteProduct = async (req, res) => {
         message: "Không tìm thấy sản phẩm"
       });
     }
-
     // Xóa sản phẩm khỏi danh mục liên quan
     await Category.updateMany({ product: req.params.id }, { $pull: { product: req.params.id } });
 
     // Xóa sản phẩm   
     await Product.findByIdAndDelete(req.params.id);
+
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product",req.user._id);
 
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
