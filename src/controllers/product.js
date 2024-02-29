@@ -3,6 +3,7 @@ import productValidator from "../validations/Product";
 import multer from "multer";
 import Category from "../models/Category";
 import { isValid } from "date-fns";
+import Notification from "../models/Notification";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -394,10 +395,13 @@ const deleteProduct = async (req, res) => {
 
     // Xóa sản phẩm khỏi danh mục liên quan
     await Category.updateMany({ product: req.params.id }, { $pull: { product: req.params.id } });
-
+    const productToDelete = await getDetailProduct(req.params.id);
     // Xóa sản phẩm   
     await Product.findByIdAndDelete(req.params.id);
-
+    
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin("Sản phẩm đã bị xoá", "product");
+    console.log(user);
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
       data: product
@@ -410,7 +414,21 @@ const deleteProduct = async (req, res) => {
     });
   }
 };
+const createNotificationForAdmin = async (message, type) => {
+  try {
+    const newNotification = new Notification({
+      userId: '65dc1b1bbbce007ddb6e3871',
+      message,
+      type,
+      isRead: false,
+      recipientType: "admin",
+    });
 
+    await newNotification.save();
+  } catch (error) {
+    console.error("Đã xảy ra lỗi khi tạo thông báo cho admin:", error.message);
+  }
+};
 export {
   addProduct,
   getAllProduct,
