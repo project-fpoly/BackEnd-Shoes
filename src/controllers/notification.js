@@ -15,6 +15,20 @@ export const getAllNotifications = async (req, res) => {
       });
   }
 };
+export const getOneNotifications = async (req, res) => {
+  try {
+    const id= req.params.notificationId
+    const notifications = await Notification.findById(id);
+    res.status(200).json(notifications);
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: "Đã xảy ra lỗi khi lấy thông báo",
+        error: error.message,
+      });
+  }
+};
 
 // Lấy thông báo theo user
 export const getUserNotifications = async (req, res) => {
@@ -105,5 +119,31 @@ export const deleteNotification = async (req, res) => {
         message: "Đã xảy ra lỗi khi xóa thông báo",
         error: error.message,
       });
+  }
+};
+export const updateNotification = async (req, res) => {
+  const notificationId = req.params.notificationId;
+
+  try {
+    // Tìm thông báo theo ID
+    const notification = await Notification.findById(notificationId);
+
+    // Kiểm tra xem thông báo có tồn tại không
+    if (!notification) {
+      return res.status(404).json({ message: "Không tìm thấy thông báo" });
+    }
+
+    // Cập nhật trạng thái isRead thành true
+    notification.isRead = true;
+
+    // Lưu thông báo đã được cập nhật
+    await notification.save();
+
+    res.status(200).json({ message: "Cập nhật thông báo thành công", updatedNotification: notification });
+  } catch (error) {
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi cập nhật thông báo",
+      error: error.message,
+    });
   }
 };
