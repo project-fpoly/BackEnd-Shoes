@@ -403,7 +403,32 @@ const updateOrder = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const updateManyOrder = async (req, res) => {
+  const { ids, isPaid, isDelivered } = req.body;
+  const idList = await Bill.find({ _id: { $in: ids } });
+  try {
+    const result = await Bill.updateMany(
+      { _id: { $in: idList } },
+      { $set: { isPaid, isDelivered } }
+    );
 
+    // Kiểm tra kết quả cập nhật
+    if (result.nModified === 0) {
+      // Nếu không có đơn hàng nào được cập nhật, trả về lỗi 404 Not Found
+      return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
+    }
+    const data = { ids, isPaid, isDelivered };
+    // Trả về số lượng đơn hàng đã được cập nhật
+    res.json({
+      message: `Cập nhật ${result.modifiedCount} đơn hàng thành công`,
+      updates: data,
+    });
+  } catch (error) {
+    // Xử lý lỗi nếu có
+    console.error("Lỗi khi cập nhật đơn hàng:", error);
+    res.status(500).json({ error: "Đã xảy ra lỗi khi cập nhật đơn hàng" });
+  }
+};
 // Xóa một giỏ hàng theo ID
 const deleteOrder = async (req, res) => {
   try {
@@ -432,6 +457,7 @@ export {
   createOrder,
   getOrderById,
   updateOrder,
+  updateManyOrder,
   deleteOrder,
   getAllOrderAdmin,
   getCartByIdAdmin,

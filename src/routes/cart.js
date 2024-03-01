@@ -11,6 +11,7 @@ import {
   getAllOrderAdmin,
   getCartByIdAdmin,
   findUserOrders,
+  updateManyOrder,
 } from "../controllers/Cart";
 import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders";
 import { checkPermissionManager } from "../middlewares/checkPermission";
@@ -31,6 +32,7 @@ routerCart.get("/bills/:id", authenticateToken, getOrderById); // Lấy thông t
 routerCart.get("/admin/bills", getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
 routerCart.delete("/admin/bills/:id", deleteOrder); // Xóa một đơn hàng(cho quản trị viên)
 routerCart.put("/admin/bills/:id", updateOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
+routerCart.put("/admin/bills/", updateManyOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
 routerCart.get("/admin/bills/:id", checkPermissionManager, getCartByIdAdmin); // Lấy thông tin chi tiết của một đơn hàng (cho quản trị viên)
 
 export default routerCart;

@@ -6,7 +6,7 @@ import routerBill from "./bill";
 import routerCart from "./cart";
 import routerComment from "./comment";
 import routerNotification from "./notification";
-
+import routerFavourite from "./fav";
 const router = express.Router();
 router.use("/auth", routerAuth);
 router.use("/bill", routerBill);
@@ -17,5 +17,6 @@ router.use("/categories", routerCategory);
 router.use("/comments", routerComment);
 router.use("/order", routerCart);
 router.use("/notification", routerNotification);
+router.use("/fav", routerFavourite);
 
 export default router;
