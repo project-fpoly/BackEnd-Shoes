@@ -5,7 +5,7 @@ import { checkPermission, checkPermissionMember } from "../middlewares/checkPerm
 const routerNotification = Router();
 
 // Lấy tất cả thông báo
-routerNotification.get("/all", getAllNotifications);
+routerNotification.get("/all",checkPermission, getAllNotifications);
 routerNotification.get("/one/:notificationId", getOneNotifications);
 routerNotification.get("/all/user",checkPermissionMember, getUserNotifications);
 

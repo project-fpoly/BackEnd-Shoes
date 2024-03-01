@@ -132,7 +132,9 @@ export const updateNotification = async (req, res) => {
     if (!notification) {
       return res.status(404).json({ message: "Không tìm thấy thông báo" });
     }
-
+    if (notification.isRead) {
+      return res.status(400).json({ message: "Thông báo đã được đọc trước đó" });
+    }
     // Cập nhật trạng thái isRead thành true
     notification.isRead = true;
 
