@@ -5,9 +5,9 @@ import {
     updateProduct,
     deleteProduct,
     upload,
-  } from "../controllers/product";
+  } from "../controllers/product.js";
   import express from "express";
-import { checkPermission } from "../middlewares/checkPermission";
+import { checkPermission } from "../middlewares/checkPermission.js";
   
   const routerProduct = express.Router();
   

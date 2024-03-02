@@ -11,14 +11,14 @@ import {
   signUp,
   updateUser,
   verifyEmail,
-} from "../controllers/auth";
+} from "../controllers/auth.js";
 import {
   checkPermission,
   checkPermissionManager,
   checkPermissionMember,
-} from "../middlewares/checkPermission";
+} from "../middlewares/checkPermission.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../configs/cloudinary";
+import cloudinary from "../configs/cloudinary.js";
 import multer from "multer";
 
 const routerAuth = Router();

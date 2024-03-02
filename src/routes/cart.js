@@ -11,9 +11,9 @@ import {
   getAllOrderAdmin,
   getCartByIdAdmin,
   findUserOrders,
-} from "../controllers/Cart";
-import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders";
-import { checkPermissionManager } from "../middlewares/checkPermission";
+} from "../controllers/Cart.js";
+import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders.js";
+import { checkPermissionManager } from "../middlewares/checkPermission.js";
 const routerCart = Router();
 
 // cart

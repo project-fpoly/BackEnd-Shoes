@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createNotification, deleteNotification, getAllNotifications, getOneNotifications, getUserNotifications, updateNotification } from "../controllers/notification";
-import { checkPermission, checkPermissionMember } from "../middlewares/checkPermission";
+import { createNotification, deleteNotification, getAllNotifications, getOneNotifications, getUserNotifications, updateNotification } from "../controllers/notification.js";
+import { checkPermission, checkPermissionMember } from "../middlewares/checkPermission.js";
 
 const routerNotification = Router();
 

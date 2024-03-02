@@ -9,10 +9,10 @@ import {
   updateComment,
   updateImage,
   uploadImage,
-} from "../controllers/comment";
-import { checkPermission, checkPermissionMember } from "../middlewares/checkPermission";
+} from "../controllers/comment.js";
+import { checkPermission, checkPermissionMember } from "../middlewares/checkPermission.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../configs/cloudinary";
+import cloudinary from "../configs/cloudinary.js";
 import multer from "multer";
 
 const routerComment = Router();

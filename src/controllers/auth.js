@@ -3,14 +3,14 @@ import {
   signInValidator,
   signUpValidator,
   updateValidator,
-} from "../validations/user";
+} from "../validations/user.js";
 import bcryptjs from "bcryptjs";
-import User from "../models/User";
+import User from "../models/User.js";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import transporter from "../configs/nodemailer";
-import { createNotificationForAdmin } from "./notification";
+import transporter from "../configs/nodemailer.js";
+import { createNotificationForAdmin } from "./notification.js";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;

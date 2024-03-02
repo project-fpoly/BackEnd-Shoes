@@ -1,10 +1,10 @@
-import Product from "../models/Product";
-import productValidator from "../validations/Product";
+import Product from "../models/Product.js";
+import productValidator from "../validations/Product.js";
 import multer from "multer";
-import Category from "../models/Category";
+import Category from "../models/Category.js";
 import { isValid } from "date-fns";
-import Notification from "../models/Notification";
-import { createNotificationForAdmin } from "./notification";
+import Notification from "../models/Notification.js";
+import { createNotificationForAdmin } from "./notification.js";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");

@@ -5,7 +5,7 @@ import {
   getAllBill,
   getBillById,
   updateBill,
-} from "../controllers/bill";
+} from "../controllers/bill.js";
 
 const routerBill = Router();
 

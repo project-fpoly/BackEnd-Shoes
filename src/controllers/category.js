@@ -1,8 +1,8 @@
-import Category from "../models/Category";
-import { categorySchema } from "../validations/category";
+import Category from "../models/Category.js";
+import { categorySchema } from "../validations/category.js";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { createNotificationForAdmin } from "./notification";
+import { createNotificationForAdmin } from "./notification.js";
 dotenv.config();
 
 const { SECRET_CODE } = process.env;
