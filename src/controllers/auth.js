@@ -301,7 +301,7 @@ export const getOneUser = async (req, res) => {
   try {
     let userId;
 
-    if (req.params && req.params.userId) {
+    if (req.params.userId) {
       userId = req.params.userId;
     } else {
       const { _id } = req.user;
@@ -319,6 +319,7 @@ export const getOneUser = async (req, res) => {
       resetToken: 0,
       resetTokenExpiry: 0,
     };
+    console.log(userId);
 
     const user = await User.findById(userId, projection);
 
