@@ -225,18 +225,21 @@ export const signIn = async (req, res) => {
       const errors = error.details.map((err) => err.message);
       return res.status(400).json({
         message: errors,
+        code: 400
       });
     }
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
       return res.status(404).json({
         message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
+        code: 404
       });
     }
     const isMatch = await bcryptjs.compare(req.body.password, user.password);
     if (!isMatch) {
       return res.status(400).json({
         message: "Password không đúng, vui lòng kiểm tra lại!",
+        code: 403
       });
     }
     const accessToken = jwt.sign({ _id: user._id }, SECRET_CODE, {
