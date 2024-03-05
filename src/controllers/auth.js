@@ -312,14 +312,12 @@ export const getOneUser = async (req, res) => {
       password: 0,
       _id: 0,
       emailVerified: 0,
-      role: 0,
       emailVerificationToken: 0,
       emailVerificationExpiry: 0,
       updatedAt: 0,
       resetToken: 0,
       resetTokenExpiry: 0,
     };
-    console.log(userId);
 
     const user = await User.findById(userId, projection);
 
