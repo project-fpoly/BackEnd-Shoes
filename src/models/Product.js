@@ -129,6 +129,10 @@ const ProductSchema = new Schema({
     type: String,
     required: false,
   },
+  gender: {
+    type: String,
+    required: false,
+  },
   isPublished: {
     type: Boolean,
     required: true,

@@ -23,7 +23,7 @@ const addProduct = async (req, res) => {
   try {
     const {
       product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating,
-      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, isPublished, publishedDate, hits,
+      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
     } = req.body;
 
     // Kiểm tra dữ liệu đầu vào sử dụng validator
@@ -49,7 +49,7 @@ const addProduct = async (req, res) => {
     // Tiếp tục xử lý khi dữ liệu hợp lệ
     const newProduct = new Product({
       product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating,
-      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, isPublished, publishedDate, hits,
+      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
     });
 
     const saveProduct = await newProduct.save();
@@ -84,6 +84,7 @@ const getAllProduct = async (req, res) => {
     const materialFilter = req.query.materialFilter || "";
     const releaseDateFilter = req.query.releaseDateFilter || "";
     const colorFilter = req.query.colorFilter || "";
+    const genderFilter = req.query.genderFilter || "";
     const sortOrder = req.query.sortOrder || "";
 
     const options = {
@@ -140,6 +141,9 @@ const getAllProduct = async (req, res) => {
 
     if (colorFilter) {
       searchCondition.color = colorFilter;
+    }
+    if (genderFilter) {
+      searchCondition.gender = genderFilter;
     }
 
     const sortOptions = {};
@@ -211,6 +215,9 @@ const getAllProduct = async (req, res) => {
     }
     if (colorFilter) {
       successMessage += " Bạn đã chọn màu sắc của sản phẩm là: " + colorFilter + ";";
+    }
+    if (genderFilter) {
+      successMessage += " Bạn đã chọn giới tính là: " + genderFilter + ";";
     }
 
     let sortOrderMessage = "";
