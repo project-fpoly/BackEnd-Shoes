@@ -29,10 +29,10 @@ routerCart.get("/bills", authenticateToken, findUserOrders); // Lấy danh sách
 routerCart.get("/bills/:id", authenticateToken, getOrderById); // Lấy thông tin chi tiết của một đơn hàng
 
 // Admin Routes
-routerCart.get("/admin/bills", getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
-routerCart.delete("/admin/bills/:id", deleteOrder); // Xóa một đơn hàng(cho quản trị viên)
-routerCart.put("/admin/bills/:id", updateOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
-routerCart.put("/admin/bills/", updateManyOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
+routerCart.get("/admin/bills", checkPermissionManager, getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
+routerCart.delete("/admin/bills/:id", checkPermissionManager, deleteOrder); // Xóa một đơn hàng(cho quản trị viên)
+routerCart.put("/admin/bills/:id", checkPermissionManager, updateOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
+routerCart.put("/admin/bills/", checkPermissionManager, updateManyOrder); // Cập nhật thông tin của nhiều đơn hàng(cho quản trị viên)
 routerCart.get("/admin/bills/:id", checkPermissionManager, getCartByIdAdmin); // Lấy thông tin chi tiết của một đơn hàng (cho quản trị viên)
 
 export default routerCart;
