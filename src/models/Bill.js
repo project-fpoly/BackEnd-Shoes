@@ -22,6 +22,9 @@ const cartItemSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  size: {
+    type: String,
+  },
 });
 const BillSchema = new mongoose.Schema(
   {
@@ -35,7 +38,7 @@ const BillSchema = new mongoose.Schema(
       email: { type: String, required: true },
       fullname: { type: String, required: true },
       address: { type: String, required: true },
-      phone: { type: Number, required: true },
+      phone: { type: String, required: true },
     },
     createdAt: {
       type: Date,
@@ -52,7 +55,9 @@ const BillSchema = new mongoose.Schema(
     quantity: {
       type: Number,
     },
-
+    trackingNumber: {
+      type: String,
+    },
     isPaid: { type: Boolean, default: false },
     isDelivered: { type: String, default: "Chờ xác nhận" },
   },

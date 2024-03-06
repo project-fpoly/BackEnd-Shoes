@@ -18,6 +18,12 @@ const cartItemSchema = new mongoose.Schema({
     type: Array,
     required: false,
   },
+  size: {
+    type: String,
+  },
+  color: {
+    type: String,
+  },
 });
 
 const cartSchema = mongoose.Schema(

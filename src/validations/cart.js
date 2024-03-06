@@ -2,7 +2,7 @@ import Joi from "joi";
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 const cartItemSchema = Joi.object({
   product: Joi.string().pattern(objectIdPattern).required(),
-  quantity: Joi.number().required(),
+  size: Joi.string().required(),
   price: Joi.number().optional(),
   images: Joi.array().optional(),
 });
