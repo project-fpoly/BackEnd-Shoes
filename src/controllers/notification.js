@@ -1,4 +1,4 @@
-import Notification from "../models/Notification";
+import Notification from "../models/Notification.js";
 import { validationResult } from "express-validator";
 
 // Lấy tất cả thông báo

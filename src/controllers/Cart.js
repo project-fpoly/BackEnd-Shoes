@@ -1,10 +1,10 @@
 import dotenv from "dotenv";
-import { Cart, CartItem } from "../models/Cart";
-import { validateCart, validateCartItems } from "../validations/cart";
+import { Cart, CartItem } from "../models/Cart.js";
+import { validateCart, validateCartItems } from "../validations/cart.js";
 import nodemailer from "nodemailer";
-import Product from "../models/Product";
-import Bill from "../models/Bill";
-import User from "../models/User";
+import Product from "../models/Product.js";
+import Bill from "../models/Bill.js";
+import User from "../models/User.js";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 

@@ -27,6 +27,7 @@ const productValidator = Joi.object({
   warranty: Joi.string(),
   tech_specs: Joi.string(),
   stock_status: Joi.string(),
+  gender: Joi.string(),
   isPublished: Joi.boolean().default(false),
   publishedDate: Joi.date(),
   hits: Joi.number().default(0),

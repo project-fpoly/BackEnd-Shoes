@@ -1,5 +1,5 @@
-import Bill from "../models/Bill";
-import { billValidator } from "../validations/bill";
+import Bill from "../models/Bill.js";
+import { billValidator } from "../validations/bill.js";
 
 export const getBillById = async (req, res) => {
   try {

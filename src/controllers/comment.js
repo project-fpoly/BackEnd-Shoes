@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
-import Comment from "../models/Comment";
-import User from "../models/User";
-import Product from "../models/Product";
+import Comment from "../models/Comment.js";
+import User from "../models/User.js";
+import Product from "../models/Product.js";
 import {
   commentValidate,
   updateCommentValidate,
-} from "../validations/comments";
-import cloudinary from "../configs/cloudinary";
+} from "../validations/comments.js";
+import cloudinary from "../configs/cloudinary.js";
 dotenv.config();
 
 const { SECRET_CODE } = process.env;

@@ -11,14 +11,14 @@ import {
   signUp,
   updateUser,
   verifyEmail,
-} from "../controllers/auth";
+} from "../controllers/auth.js";
 import {
   checkPermission,
   checkPermissionManager,
   checkPermissionMember,
-} from "../middlewares/checkPermission";
+} from "../middlewares/checkPermission.js";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../configs/cloudinary";
+import cloudinary from "../configs/cloudinary.js";
 import multer from "multer";
 
 const routerAuth = Router();
@@ -43,7 +43,7 @@ routerAuth.put("/users/:userId", upload.single("avt"), updateUser);
 routerAuth.delete("/more-users",checkPermission, deleteMoreUsers);
 
 // routerAuth.delete("/users/:userId", deleteUser);
-routerAuth.get("/user/:userId", checkPermissionMember, getOneUser);
+routerAuth.get("/user/:userId?", checkPermissionMember, getOneUser);
 routerAuth.post("/forgot-password", forgotPassword);
 routerAuth.post("/reset-password", resetPassword);
 

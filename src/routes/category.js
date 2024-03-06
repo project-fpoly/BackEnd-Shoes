@@ -1,6 +1,6 @@
 import { Router } from "express"
-import { createCategory, getAllCategory, removeCategory, updateCategory,getOneCategory } from "../controllers/category"
-import { checkPermission } from "../middlewares/checkPermission";
+import { createCategory, getAllCategory, removeCategory, updateCategory,getOneCategory } from "../controllers/category.js"
+import { checkPermission } from "../middlewares/checkPermission.js";
 
 const routerCategory = Router()
 

@@ -1,10 +1,10 @@
-import Product from "../models/Product";
-import productValidator from "../validations/Product";
+import Product from "../models/Product.js";
+import productValidator from "../validations/Product.js";
 import multer from "multer";
-import Category from "../models/Category";
+import Category from "../models/Category.js";
 import { isValid } from "date-fns";
-import Notification from "../models/Notification";
-import { createNotificationForAdmin } from "./notification";
+import Notification from "../models/Notification.js";
+import { createNotificationForAdmin } from "./notification.js";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -22,31 +22,8 @@ const upload = multer({
 const addProduct = async (req, res) => {
   try {
     const {
-      product_id,
-      SKU,
-      name,
-      description,
-      categoryId,
-
-      price,
-      sale,
-      discount,
-      quantity,
-      sold_count,
-      rating,
-      sizes,
-      color,
-      material,
-      release_date,
-      images,
-      video,
-      blog,
-      warranty,
-      tech_specs,
-      stock_status,
-      isPublished,
-      publishedDate,
-      hits,
+      product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating,
+      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
     } = req.body;
 
     // Kiểm tra dữ liệu đầu vào sử dụng validator
@@ -71,31 +48,8 @@ const addProduct = async (req, res) => {
 
     // Tiếp tục xử lý khi dữ liệu hợp lệ
     const newProduct = new Product({
-      product_id,
-      SKU,
-      name,
-      description,
-      categoryId,
-
-      price,
-      sale,
-      discount,
-      quantity,
-      sold_count,
-      rating,
-      sizes,
-      color,
-      material,
-      release_date,
-      images,
-      video,
-      blog,
-      warranty,
-      tech_specs,
-      stock_status,
-      isPublished,
-      publishedDate,
-      hits,
+      product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating,
+      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
     });
 
     const saveProduct = await newProduct.save();
@@ -129,13 +83,9 @@ const getAllProduct = async (req, res) => {
     const priceFilter = req.query.priceFilter || "";
     const materialFilter = req.query.materialFilter || "";
     const releaseDateFilter = req.query.releaseDateFilter || "";
-    const sortOrder = req.query.sortOrder || "";
     const colorFilter = req.query.colorFilter || "";
-    const viewsFilter = req.query.viewsFilter || "";
-    const soldFilter = req.query.soldFilter || "";
-    const saleFilter = req.query.soldFilter || "";
-    const rateFilter = req.query.rateFilter || "";
-
+    const genderFilter = req.query.genderFilter || "";
+    const sortOrder = req.query.sortOrder || "";
 
     const options = {
       page,
@@ -188,69 +138,47 @@ const getAllProduct = async (req, res) => {
         });
       }
     }
+
     if (colorFilter) {
       searchCondition.color = colorFilter;
     }
-
-    if (viewsFilter) {
-      searchCondition.hits = { $gte: parseInt(viewsFilter) };
-    }
-
-    if (soldFilter) {
-      searchCondition.sold_count = { $gte: parseInt(soldFilter) };
-    }
-    if (saleFilter) {
-      searchCondition.sale = { $gte: parseInt(saleFilter) };
-    }
-    if (rateFilter) {
-      searchCondition.sale = { $gte: parseInt(rateFilter) };
+    if (genderFilter) {
+      searchCondition.gender = genderFilter;
     }
 
     const sortOptions = {};
+
     if (sortOrder === "asc") {
       sortOptions.price = 1;
     } else if (sortOrder === "desc") {
       sortOptions.price = -1;
-    } else {
-      sortOptions.price = 0;
-    }
-    if (sortOrder === "asc_views") {
-      sortOptions.views = 1;
+    } else if (sortOrder === "asc_views") {
+      sortOptions.hits = 1;
     } else if (sortOrder === "desc_views") {
-      sortOptions.views = -1;
-    }
-
-    if (sortOrder === "asc_sold") {
+      sortOptions.hits = -1;
+    } else if (sortOrder === "asc_sold") {
       sortOptions.sold = 1;
     } else if (sortOrder === "desc_sold") {
       sortOptions.sold = -1;
-    }
-
-    if (sortOrder === "asc_sale") {
+    } else if (sortOrder === "asc_sale") {
       sortOptions.sale = 1;
     } else if (sortOrder === "desc_sale") {
       sortOptions.sale = -1;
-    }
-    if (sortOrder === "asc_rate") {
+    } else if (sortOrder === "asc_rate") {
       sortOptions.rating = 1;
     } else if (sortOrder === "desc_rate") {
       sortOptions.rating = -1;
+    } else {
+      sortOptions.price = 0;
     }
-
-
-
-
     const products = await Product.paginate(searchCondition, options);
-
     if (products.docs.length === 0) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm nào",
         data: [],
       });
     }
-
     const productIds = products.docs.map((product) => product._id);
-
     let populatedProducts = {};
 
     if (sortOptions.price === 0) {
@@ -288,6 +216,9 @@ const getAllProduct = async (req, res) => {
     if (colorFilter) {
       successMessage += " Bạn đã chọn màu sắc của sản phẩm là: " + colorFilter + ";";
     }
+    if (genderFilter) {
+      successMessage += " Bạn đã chọn giới tính là: " + genderFilter + ";";
+    }
 
     let sortOrderMessage = "";
     if (sortOrder === "asc") {
@@ -306,11 +237,11 @@ const getAllProduct = async (req, res) => {
       sortOrderMessage = "Số % khuyến mãi giá bán tăng dần";
     } else if (sortOrder === "desc_sale") {
       sortOrderMessage = "Số % khuyến mãi giá bán giảm dần";
-    }else if (sortOrder === "asc_rate") {
+    } else if (sortOrder === "asc_rate") {
       sortOrderMessage = "Số lượt đánh giá sản phẩm tăng dần";
     } else if (sortOrder === "desc_rate") {
       sortOrderMessage = "Số lượt đánh giá sản phẩm giảm dần";
-    }  else {
+    } else {
       sortOrderMessage = "mặc định";
     }
 
@@ -400,7 +331,7 @@ const deleteProduct = async (req, res) => {
     await Product.findByIdAndDelete(req.params.id);
 
     // Thêm thông báo cho admin
-    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product",req.user._id);
+    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product", req.user._id);
 
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",

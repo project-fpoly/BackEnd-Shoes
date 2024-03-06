@@ -3,14 +3,14 @@ import {
   signInValidator,
   signUpValidator,
   updateValidator,
-} from "../validations/user";
+} from "../validations/user.js";
 import bcryptjs from "bcryptjs";
-import User from "../models/User";
+import User from "../models/User.js";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import transporter from "../configs/nodemailer";
-import { createNotificationForAdmin } from "./notification";
+import transporter from "../configs/nodemailer.js";
+import { createNotificationForAdmin } from "./notification.js";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;
@@ -225,18 +225,21 @@ export const signIn = async (req, res) => {
       const errors = error.details.map((err) => err.message);
       return res.status(400).json({
         message: errors,
+        code: 400
       });
     }
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
       return res.status(404).json({
         message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
+        code: 404
       });
     }
     const isMatch = await bcryptjs.compare(req.body.password, user.password);
     if (!isMatch) {
       return res.status(400).json({
         message: "Password không đúng, vui lòng kiểm tra lại!",
+        code: 403
       });
     }
     const accessToken = jwt.sign({ _id: user._id }, SECRET_CODE, {
@@ -298,7 +301,7 @@ export const getOneUser = async (req, res) => {
   try {
     let userId;
 
-    if (req.params && req.params.userId) {
+    if (req.params.userId) {
       userId = req.params.userId;
     } else {
       const { _id } = req.user;
@@ -309,7 +312,6 @@ export const getOneUser = async (req, res) => {
       password: 0,
       _id: 0,
       emailVerified: 0,
-      role: 0,
       emailVerificationToken: 0,
       emailVerificationExpiry: 0,
       updatedAt: 0,
