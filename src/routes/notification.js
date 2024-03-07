@@ -14,7 +14,7 @@ routerNotification.post("/create",createNotification);
 
 // Cập nhật thông báo
 // Giành cho admin khi muốn gửi thông báo cho user hoặc manager
-routerNotification.put("/update/:notificationId", checkPermissionMember, updateNotification);
+routerNotification.put("/update/:notificationId", updateNotification);
 
 // Xóa thông báo
 routerNotification.delete("/delete/:notificationId", deleteNotification);
