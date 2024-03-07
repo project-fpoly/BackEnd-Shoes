@@ -30,14 +30,14 @@ const storage = new CloudinaryStorage({
   },
 });
 const upload = multer({ storage: storage });
-routerAuth.post("/create", upload.single("avt"), createUser);
+routerAuth.post("/create", upload.single("avt"),checkPermissionManager, createUser);
 routerAuth.post("/signup", signUp);
 routerAuth.post("/signin", signIn);
 
 // người quản lý mới có thể xem tất cả user và cập nhật
-routerAuth.get("/users", getAllUsers);
+routerAuth.get("/users",checkPermissionManager, getAllUsers);
 
-routerAuth.put("/users/:userId", upload.single("avt"), updateUser);
+routerAuth.put("/users/:userId",checkPermissionMember, upload.single("avt"), updateUser);
 
 //chỉ admin mới có quyền xoá hàng loạt
 routerAuth.delete("/more-users",checkPermission, deleteMoreUsers);
