@@ -1,11 +1,12 @@
 import express from "express";
-import routerAuth from "./auth.js";
-import routerCategory from "./category.js";
-import routerProduct from "./product.js";
-import routerBill from "./bill.js";
-import routerCart from "./cart.js";
-import routerComment from "./comment.js";
-import routerNotification from "./notification.js";
+import routerAuth from "./auth";
+import routerCategory from "./category";
+import routerProduct from "./product";
+import routerBill from "./bill";
+import routerCart from "./cart";
+import routerComment from "./comment";
+import routerNotification from "./notification";
+import routerFavourite from "./fav";
 
 const router = express.Router();
 router.use("/auth", routerAuth);
@@ -17,5 +18,6 @@ router.use("/categories", routerCategory);
 router.use("/comments", routerComment);
 router.use("/order", routerCart);
 router.use("/notification", routerNotification);
+router.use("/fav", routerFavourite);
 
 export default router;

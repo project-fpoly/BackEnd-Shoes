@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 
-const cartItemSchema = new mongoose.Schema({
+const favItemSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
     required: true,
   },
-  quantity: {
-    type: Number,
+  size: {
+    type: String,
     required: true,
   },
   price: {
@@ -18,17 +18,11 @@ const cartItemSchema = new mongoose.Schema({
     type: Array,
     required: false,
   },
-  size: {
-    type: String,
-  },
-  color: {
-    type: String,
-  },
 });
 
-const cartSchema = mongoose.Schema(
+const favSchema = mongoose.Schema(
   {
-    cartItems: [cartItemSchema],
+    cartItems: [favItemSchema],
 
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -42,7 +36,7 @@ const cartSchema = mongoose.Schema(
   }
 );
 
-const CartItem = mongoose.model("CartItem", cartItemSchema);
-const Cart = mongoose.model("Cart", cartSchema);
+const FavItem = mongoose.model("FavItem", favItemSchema);
+const Fav = mongoose.model("Fav", favSchema);
 
-export { CartItem, Cart };
+export { FavItem, Fav };

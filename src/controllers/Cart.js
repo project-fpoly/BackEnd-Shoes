@@ -11,7 +11,8 @@ const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 // Tạo một giỏ hàng mới
 const addCartItems = async (req, res) => {
   try {
-    const quantity = req.body.quantity;
+    const quantity = 1;
+    const size = req.body.size;
     const product = req.body.product;
     const userId = req.user?._id;
     const a = req.body;
@@ -52,11 +53,12 @@ const addCartItems = async (req, res) => {
 
     const productPrice = productModel.price;
     const productImage = productModel.images;
+    const productColor = productModel.color;
 
     const existingCartItem = cart.cartItems.find(
-      (item) => item.product.toString() === product
+      (item) => item.product.toString() === product && item.size === size
     );
-
+    console.log(existingCartItem);
     if (existingCartItem) {
       // Tăng số lượng nếu sản phẩm đã tồn tại trong giỏ hàng
       existingCartItem.quantity += quantity;
@@ -68,6 +70,8 @@ const addCartItems = async (req, res) => {
         quantity: quantity,
         price: productPrice * quantity,
         images: productImage,
+        size: size,
+        color: productColor,
       };
       cart.cartItems.push(newCartItem);
     }
@@ -118,6 +122,17 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ error: "Giỏ hàng trống" });
     }
 
+    const generateTrackingNumber = () => {
+      // Triển khai logic để tạo mã vận đơn
+      // Ví dụ: tạo mã ngẫu nhiên từ các ký tự và số
+      const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let trackingNumber = "";
+      for (let i = 0; i < 10; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        trackingNumber += characters[randomIndex];
+      }
+      return trackingNumber;
+    };
     // Tạo đơn hàng từ giỏ hàng và sử dụng trường totalPrice từ giỏ hàng
     const order = new Bill({
       user: userId,
@@ -127,10 +142,13 @@ const createOrder = async (req, res) => {
           quantity: item.quantity,
           price: item.price,
           images: item.images,
+          size: item.size,
+          color: item.color,
         })),
       ],
       shippingAddress,
       totalPrice: cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
+      trackingNumber: generateTrackingNumber(),
     });
 
     if (userEmail) {
@@ -146,7 +164,7 @@ const createOrder = async (req, res) => {
         from: GMAIL_ADMIN,
         to: userEmail,
         subject: "Bạn đã đặt hàng thành công",
-        text: `"Đơn hàng của bạn đã được đặt thành công."`,
+        text: `"Đơn hàng của bạn đã được đặt thành công !Mã vận đơn:${order.trackingNumber} "`,
       };
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -169,9 +187,10 @@ const createOrder = async (req, res) => {
       };
     }
 
-    res
-      .status(200)
-      .json({ message: "Đơn hàng đã được tạo thành công", data: order });
+    res.status(200).json({
+      message: "Đơn hàng đã được tạo thành công",
+      data: order,
+    });
   } catch (error) {
     res.status(500).json({ error: "Đã xảy ra lỗi khi tạo đơn hàng" });
     console.log(error);
@@ -263,7 +282,7 @@ const removeCartItem = async (req, res) => {
 const findUserOrders = async (req, res) => {
   try {
     const userId = req.user?._id;
-    const { page = 1, limit = 10, start, end } = req.query;
+    const { page = 1, limit = 10, start, end, search } = req.query;
     let query = {};
 
     if (!userId) {
@@ -276,7 +295,9 @@ const findUserOrders = async (req, res) => {
 
       query.createdAt = { $gte: startDate, $lte: endDate };
     }
-
+    if (search) {
+      query.$or = [{ trackingNumber: { $regex: search, $options: "i" } }];
+    }
     const totalOrders = await Bill.countDocuments({ user: userId, ...query });
 
     const orders = await Bill.find({ user: userId, ...query })
@@ -336,6 +357,8 @@ const getAllOrderAdmin = async (req, res) => {
         { "shippingAddress.fullname": { $regex: search, $options: "i" } },
         { "shippingAddress.email": { $regex: search, $options: "i" } },
         { "shippingAddress.address": { $regex: search, $options: "i" } },
+        { "shippingAddress.phone": { $regex: search, $options: "i" } },
+        { trackingNumber: { $regex: search, $options: "i" } },
       ];
     }
     const totalOrders = await Bill.countDocuments(query);
@@ -403,7 +426,32 @@ const updateOrder = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const updateManyOrder = async (req, res) => {
+  const { ids, isPaid, isDelivered } = req.body;
+  const idList = await Bill.find({ _id: { $in: ids } });
+  try {
+    const result = await Bill.updateMany(
+      { _id: { $in: idList } },
+      { $set: { isPaid, isDelivered } }
+    );
 
+    // Kiểm tra kết quả cập nhật
+    if (result.nModified === 0) {
+      // Nếu không có đơn hàng nào được cập nhật, trả về lỗi 404 Not Found
+      return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
+    }
+    const data = { ids, isPaid, isDelivered };
+    // Trả về số lượng đơn hàng đã được cập nhật
+    res.json({
+      message: `Cập nhật ${result.modifiedCount} đơn hàng thành công`,
+      updates: data,
+    });
+  } catch (error) {
+    // Xử lý lỗi nếu có
+    console.error("Lỗi khi cập nhật đơn hàng:", error);
+    res.status(500).json({ error: "Đã xảy ra lỗi khi cập nhật đơn hàng" });
+  }
+};
 // Xóa một giỏ hàng theo ID
 const deleteOrder = async (req, res) => {
   try {
@@ -432,6 +480,7 @@ export {
   createOrder,
   getOrderById,
   updateOrder,
+  updateManyOrder,
   deleteOrder,
   getAllOrderAdmin,
   getCartByIdAdmin,
