@@ -6,13 +6,13 @@ import router from "./routes/index.js";
 import mongoose from "mongoose";
 import cors from "cors";
 import session from "express-session";
-import { createNotificationForAdmin } from "./controllers/notification.js"; 
+import { createNotificationForAdmin } from "./controllers/notification.js";
 dotenv.config();
 const { PORT, DB_URI, SECRET_CODE } = process.env;
 
 const app = express();
-const server = http.createServer(app); 
-const io = new SocketIOServer(server); 
+const server = http.createServer(app);
+const io = new SocketIOServer(server);
 
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
@@ -33,10 +33,10 @@ app.use("/api", router);
 // Socket.io implementation
 io.on("connection", (socket) => {
   socket.on("new_user_login", (data) => {
-    io.emit("new_user_login", { message: data.message });
+    io.emit("new_user_login", { message: data.message, _id: data._id });
   });
-  socket.on("newNotification",  (data) => {
-      io.emit("newNotification", { message: data.message });
+  socket.on("newNotification", (data) => {
+    io.emit("newNotification", { message: data.message });
   });
   socket.on("disconnect", () => {
     console.log("User disconnected");

@@ -1,6 +1,6 @@
 import Notification from "../models/Notification.js";
 import { validationResult } from "express-validator";
-
+import io from "socket.io-client";
 // Lấy tất cả thông báo
 export const getAllNotifications = async (req, res) => {
   try {
@@ -46,17 +46,19 @@ export const getUserNotifications = async (req, res) => {
   }
 };
 
-export const createNotificationForAdmin = async (message, type,_id) => {
+export const createNotificationForAdmin = async (message, type,_id,role) => {
   try {
     const newNotification = new Notification({
       userId: _id,
       message,
       type,
       isRead: false,
-      recipientType: "admin",
+      recipientType: role,
     });
 
     await newNotification.save();
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("newNotification", { message: `${newNotification.message}` });
   } catch (error) {
     return res.status(500).json({
       message: "Đã xảy ra lỗi khi tạo thông báo cho admin",

@@ -331,8 +331,7 @@ const deleteProduct = async (req, res) => {
     await Product.findByIdAndDelete(req.params.id);
 
     // Thêm thông báo cho admin
-    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product", req.user._id);
-
+    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product", req.user._id,"admin");
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
       data: product

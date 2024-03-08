@@ -145,8 +145,7 @@ export const removeCategory = async (req, res) => {
                 });
             }
             // Thêm thông báo cho admin
-            await createNotificationForAdmin(`danh mục ${data.name} đã bị xoá bởi ${req.user.email}`, "category",req.user._id);
-
+            await createNotificationForAdmin(`danh mục ${data.name} đã bị xoá bởi ${req.user.email}`, "category",req.user._id,"admin");
             return res.status(200).json({
                 message: "Xoá danh mục thành công!",
                 data,

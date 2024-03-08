@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import transporter from "../configs/nodemailer.js";
 import { createNotificationForAdmin } from "./notification.js";
+import io from "socket.io-client";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;
@@ -246,6 +247,8 @@ export const signIn = async (req, res) => {
       expiresIn: "1d",
     });
     user.password = undefined;
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("new_user_login", { message: `đăng nhập thành công`,_id:`${user._id}` });
     return res.status(200).json({
       message: "Đăng nhập thành công!",
       accessToken,
@@ -544,7 +547,7 @@ export const deleteMoreUsers = async (req, res) => {
         req.user.email
       }`,
       "user",
-      req.user._id
+      req.user._id,"admin"
     );
 
     // Thực hiện xoá người dùng
