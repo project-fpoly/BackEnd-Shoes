@@ -292,9 +292,13 @@ export const getAllUsers = async (req, res) => {
     if (roleFilter) {
       searchCondition.role = roleFilter;
     }
-    const users = await User.paginate(searchCondition, options);
-
+    const users = await User.paginate(searchCondition, {
+      ...options,
+      sort: { isActive: -1 },
+    });
+    
     return res.status(200).json(users);
+    
   } catch (error) {
     return res.status(500).json({
       name: error.name,

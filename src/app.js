@@ -30,26 +30,25 @@ mongoose.connect(DB_URI).then(() => {
 });
 
 app.use("/api", router);
-
+let socket;
 // Socket.io implementation
-io.on("connection", (socket) => {
+io.on("connection", (s) => {
+  socket = s;
+  console.log(socket.userId);
   socket.on("new_user_login",async  (data) => {
-    console.log("User connect");
     io.emit("new_user_login", { message: data.message, _id: data._id });
      await User.findByIdAndUpdate(data._id, { isActive: true });
      io.emit("update_user_status", { _id: data._id, isActive: true });
+     socket.userId = data._id;
   });
   socket.on("newNotification", (data) => {
     io.emit("newNotification", { message: data.message });
   });
   socket.on("log_out", async (data) => {
-    console.log("User logout");
     await User.findByIdAndUpdate(data.userId, { isActive: false });
     io.emit("update_user_status", { _id: data._id, isActive: false });
   });
-  socket.on("disconnect", async (data) => {
-    console.log("User disconnected",data);
-    console.log(socket);
+  socket.on("disconnect", async () => {
     await User.findByIdAndUpdate(socket.userId, { isActive: false });
     io.emit("update_user_status", { _id: socket._id, isActive: false });
   });
