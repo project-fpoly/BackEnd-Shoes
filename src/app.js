@@ -33,10 +33,14 @@ app.use("/api", router);
 // Socket.io implementation
 io.on("connection", (socket) => {
   socket.on("new_user_login", (data) => {
+    console.log("User connect");
     io.emit("new_user_login", { message: data.message, _id: data._id });
   });
   socket.on("newNotification", (data) => {
     io.emit("newNotification", { message: data.message });
+  });
+  socket.on("log_out", () => {
+    console.log("User logout");
   });
   socket.on("disconnect", () => {
     console.log("User disconnected");

@@ -248,7 +248,10 @@ export const signIn = async (req, res) => {
     });
     user.password = undefined;
     const socket = io("http://localhost:9000", { transports: ["websocket"] });
-    socket.emit("new_user_login", { message: `đăng nhập thành công`,_id:`${user._id}` });
+    socket.emit("new_user_login", {
+      message: `đăng nhập thành công`,
+      _id: `${user._id}`,
+    });
     return res.status(200).json({
       message: "Đăng nhập thành công!",
       accessToken,
@@ -541,15 +544,6 @@ export const deleteMoreUsers = async (req, res) => {
       });
     }
 
-    // Thêm thông báo cho admin
-    await createNotificationForAdmin(
-      `Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${
-        req.user.email
-      }`,
-      "user",
-      req.user._id,"admin"
-    );
-
     // Thực hiện xoá người dùng
     const deletedUsers = await User.deleteMany({
       _id: { $in: usersToDeleteFiltered.map((user) => user._id) },
@@ -566,7 +560,15 @@ export const deleteMoreUsers = async (req, res) => {
 
     // // Xoá các notification có userId trùng với userId bị xoá
     // await Notification.deleteMany({ userId: { $in: userIdsToDelete } });
-
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin(
+      `Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${
+        req.user.email
+      }`,
+      "user",
+      req.user._id,
+      "admin"
+    );
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
       deletedCount: deletedUsers.deletedCount,

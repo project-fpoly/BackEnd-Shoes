@@ -7,13 +7,13 @@ const routerNotification = Router();
 // Lấy tất cả thông báo
 routerNotification.get("/all",checkPermission, getAllNotifications);
 routerNotification.get("/one/:notificationId", getOneNotifications);
-routerNotification.get("/all/user",checkPermissionMember, getUserNotifications);
+routerNotification.get("/role",checkPermissionMember, getUserNotifications);
 
 // Tạo mới thông báo
-routerNotification.post("/create",createNotification);
+// Giành cho admin khi muốn gửi thông báo cho user hoặc manager
+routerNotification.post("/create",checkPermission,createNotification);
 
 // Cập nhật thông báo
-// Giành cho admin khi muốn gửi thông báo cho user hoặc manager
 routerNotification.put("/update/:notificationId", updateNotification);
 
 // Xóa thông báo
