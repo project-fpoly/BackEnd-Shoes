@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(
   session({
     secret: SECRET_CODE, // Thay thế bằng một chuỗi bí mật mạnh hơn trong môi trường thực tế
-    resave: false,
+    resave: true,
     saveUninitialized: true,
   })
 );
