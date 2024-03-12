@@ -316,7 +316,6 @@ export const getOneUser = async (req, res) => {
 
     const projection = {
       password: 0,
-      _id: 0,
       emailVerified: 0,
       emailVerificationToken: 0,
       emailVerificationExpiry: 0,

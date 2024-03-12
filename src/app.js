@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import session from "express-session";
 import { createNotificationForAdmin } from "./controllers/notification.js";
+import User from "./models/User.js";
 dotenv.config();
 const { PORT, DB_URI, SECRET_CODE } = process.env;
 
@@ -32,18 +33,25 @@ app.use("/api", router);
 
 // Socket.io implementation
 io.on("connection", (socket) => {
-  socket.on("new_user_login", (data) => {
+  socket.on("new_user_login",async  (data) => {
     console.log("User connect");
     io.emit("new_user_login", { message: data.message, _id: data._id });
+     await User.findByIdAndUpdate(data._id, { isActive: true });
+     io.emit("update_user_status", { _id: data._id, isActive: true });
   });
   socket.on("newNotification", (data) => {
     io.emit("newNotification", { message: data.message });
   });
-  socket.on("log_out", () => {
+  socket.on("log_out", async (data) => {
     console.log("User logout");
+    await User.findByIdAndUpdate(data.userId, { isActive: false });
+    io.emit("update_user_status", { _id: data._id, isActive: false });
   });
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
+  socket.on("disconnect", async (data) => {
+    console.log("User disconnected",data);
+    console.log(socket);
+    await User.findByIdAndUpdate(socket.userId, { isActive: false });
+    io.emit("update_user_status", { _id: socket._id, isActive: false });
   });
 });
 
