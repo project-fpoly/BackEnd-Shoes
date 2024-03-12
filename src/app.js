@@ -20,8 +20,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(
   session({
-    secret: SECRET_CODE,
-    resave: false,
+    secret: SECRET_CODE, // Thay thế bằng một chuỗi bí mật mạnh hơn trong môi trường thực tế
+    resave: true,
     saveUninitialized: true,
   })
 );

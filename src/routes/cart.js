@@ -12,6 +12,7 @@ import {
   getCartByIdAdmin,
   findUserOrders,
   updateManyOrder,
+  updateCart,
 } from "../controllers/Cart";
 import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders";
 import { checkPermissionManager } from "../middlewares/checkPermission";
@@ -22,6 +23,7 @@ const routerCart = Router();
 routerCart.post("/carts", authenticateToken, addCartItems); // Thêm một mục hàng vào giỏ hàng
 routerCart.get("/carts", authenticateToken, getCartItems); // Lấy danh sách các mục hàng trong giỏ hàng
 routerCart.delete("/carts/:id", authenticateToken, removeCartItem); // Xóa một mục hàng khỏi giỏ hàng
+routerCart.put("/carts/:id", authenticateToken, updateCart); // Xóa một mục hàng khỏi giỏ hàng
 
 // Bills (Orders)
 routerCart.post("/bills", authenticateToken, createOrder); // Tạo một đơn hàng mới
