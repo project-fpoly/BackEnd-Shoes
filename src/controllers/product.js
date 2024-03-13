@@ -85,7 +85,9 @@ const getAllProduct = async (req, res) => {
     const releaseDateFilter = req.query.releaseDateFilter || "";
     const colorFilter = req.query.colorFilter || "";
     const genderFilter = req.query.genderFilter || "";
+    const deleteFilter = req.query.deleteFilter || false;
     const sortOrder = req.query.sortOrder || "";
+
 
     const options = {
       page,
@@ -144,6 +146,9 @@ const getAllProduct = async (req, res) => {
     }
     if (genderFilter) {
       searchCondition.gender = genderFilter;
+    }
+    if (deleteFilter) {
+      searchCondition.delete = deleteFilter;
     }
 
     const sortOptions = {};
@@ -313,6 +318,36 @@ const updateProduct = async (req, res) => {
   }
 };
 
+const tryDeleteProduct = async (req, res) => {
+  try {
+    // Kiểm tra sản phẩm có tồn tại
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm"
+      });
+    }
+
+    // Thay đổi trường 'delete' thành true
+    product.delete = true;
+
+    // Cập nhật sản phẩm
+    await product.save();
+
+    return res.status(200).json({
+      message: "Đã xóa tạm thời!",
+      data: product
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Lỗi hệ thống",
+      error: error.message
+    });
+  }
+};
+
 const deleteProduct = async (req, res) => {
   try {
 
@@ -351,6 +386,7 @@ export {
   getAllProduct,
   getDetailProduct,
   updateProduct,
+  tryDeleteProduct, 
   deleteProduct,
   upload,
 };

@@ -147,6 +147,11 @@ const ProductSchema = new Schema({
     required: false,
     default: 0,
   },
+  delete: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 });
 
 ProductSchema.plugin(timestampPlugin);

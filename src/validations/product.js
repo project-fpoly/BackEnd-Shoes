@@ -31,6 +31,7 @@ const productValidator = Joi.object({
   isPublished: Joi.boolean().default(false),
   publishedDate: Joi.date(),
   hits: Joi.number().default(0),
+  delete:Joi.boolean().default(false),
 });
 
 export default productValidator;
