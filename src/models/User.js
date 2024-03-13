@@ -44,11 +44,16 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
 }, { versionKey: false, timestamps: true})
 
 //Tạm thời check bằng lần cuối người dùng làm 1 tác vụ
 userSchema.pre('save', function (next) {
     this.lastActivity = new Date();
+    this.isActive = true;
     next();
 });
 userSchema.plugin(mongoosePaginate);

@@ -1,6 +1,6 @@
 import Notification from "../models/Notification.js";
 import { validationResult } from "express-validator";
-
+import io from "socket.io-client";
 // Lấy tất cả thông báo
 export const getAllNotifications = async (req, res) => {
   try {
@@ -30,11 +30,11 @@ export const getOneNotifications = async (req, res) => {
   }
 };
 
-// Lấy thông báo theo user
+// Lấy thông báo theo role
 export const getUserNotifications = async (req, res) => {
   try {
-    const { _id } = req.user;
-    const notifications = await Notification.find({ userId: _id });
+    const { role } = req.user;
+    const notifications = await Notification.find({ recipientType: role }).sort({ createdAt: -1 });
      res.status(200).json(notifications);
   } catch (error) {
     res
@@ -46,17 +46,19 @@ export const getUserNotifications = async (req, res) => {
   }
 };
 
-export const createNotificationForAdmin = async (message, type,_id) => {
+export const createNotificationForAdmin = async (message, type,_id,role) => {
   try {
     const newNotification = new Notification({
       userId: _id,
       message,
       type,
       isRead: false,
-      recipientType: "admin",
+      recipientType: role,
     });
 
     await newNotification.save();
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("newNotification", { message: `${newNotification.message}` });
   } catch (error) {
     return res.status(500).json({
       message: "Đã xảy ra lỗi khi tạo thông báo cho admin",
@@ -66,7 +68,7 @@ export const createNotificationForAdmin = async (message, type,_id) => {
 };
 // Tạo mới thông báo
 export const createNotification = async (req, res) => {
-  const { userId, message, type, isRead, recipientType } = req.body;
+  const { message, type, recipientType } = req.body;
 
   try {
     // Validate dữ liệu
@@ -76,10 +78,10 @@ export const createNotification = async (req, res) => {
     }
 
     const newNotification = new Notification({
-      userId,
+      userId:req.user._id,
       message,
       type,
-      isRead: isRead || false,
+      isRead: false,
       recipientType,
     });
 

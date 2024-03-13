@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import transporter from "../configs/nodemailer.js";
 import { createNotificationForAdmin } from "./notification.js";
+import io from "socket.io-client";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;
@@ -246,6 +247,11 @@ export const signIn = async (req, res) => {
       expiresIn: "1d",
     });
     user.password = undefined;
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("new_user_login", {
+      message: `đăng nhập thành công`,
+      _id: `${user._id}`,
+    });
     return res.status(200).json({
       message: "Đăng nhập thành công!",
       accessToken,
@@ -286,9 +292,13 @@ export const getAllUsers = async (req, res) => {
     if (roleFilter) {
       searchCondition.role = roleFilter;
     }
-    const users = await User.paginate(searchCondition, options);
-
+    const users = await User.paginate(searchCondition, {
+      ...options,
+      sort: { isActive: -1 },
+    });
+    
     return res.status(200).json(users);
+    
   } catch (error) {
     return res.status(500).json({
       name: error.name,
@@ -310,7 +320,6 @@ export const getOneUser = async (req, res) => {
 
     const projection = {
       password: 0,
-      _id: 0,
       emailVerified: 0,
       emailVerificationToken: 0,
       emailVerificationExpiry: 0,
@@ -538,15 +547,6 @@ export const deleteMoreUsers = async (req, res) => {
       });
     }
 
-    // Thêm thông báo cho admin
-    await createNotificationForAdmin(
-      `Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${
-        req.user.email
-      }`,
-      "user",
-      req.user._id
-    );
-
     // Thực hiện xoá người dùng
     const deletedUsers = await User.deleteMany({
       _id: { $in: usersToDeleteFiltered.map((user) => user._id) },
@@ -563,7 +563,15 @@ export const deleteMoreUsers = async (req, res) => {
 
     // // Xoá các notification có userId trùng với userId bị xoá
     // await Notification.deleteMany({ userId: { $in: userIdsToDelete } });
-
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin(
+      `Người dùng có Email ${deletedUserEmails.join(", ")} đã bị xoá bởi ${
+        req.user.email
+      }`,
+      "user",
+      req.user._id,
+      "admin"
+    );
     return res.status(200).json({
       message: "Xoá người dùng thành công.",
       deletedCount: deletedUsers.deletedCount,
