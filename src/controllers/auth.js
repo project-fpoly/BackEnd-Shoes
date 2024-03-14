@@ -12,6 +12,7 @@ import crypto from "crypto";
 import transporter from "../configs/nodemailer.js";
 import { createNotificationForAdmin } from "./notification.js";
 import io from "socket.io-client";
+import cloudinary from "../configs/cloudinary.js";
 dotenv.config();
 
 const { SECRET_CODE, PORT_CLIENT } = process.env;
@@ -381,9 +382,12 @@ export const updateUser = async (req, res) => {
     }
     // Kiểm tra xem người dùng đã cung cấp ảnh mới hay không
     if (req.file) {
-      // Nếu có ảnh mới, cập nhật đường dẫn và public ID
+      if (existingUser.avt && existingUser.avt.publicId) {
+        await cloudinary.uploader.destroy(existingUser.avt.publicId, { folder: 'avatar' });
+      }
       existingUser.avt = {
         url: req.file.path,
+        
         publicId: req.file.filename,
       };
     }

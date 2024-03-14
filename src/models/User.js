@@ -27,6 +27,12 @@ const userSchema = new mongoose.Schema({
     },
     avt: {
       type: Object,
+      default: {publicId
+      : 
+      "book/v1710425407",
+      url
+      : 
+      "https://res.cloudinary.com/lamnt/image/upload/v1710425407/book/default-user-icon-8_p70szz.jpg"}
     },
     deliveryAddress: {
       type: String,
@@ -53,7 +59,6 @@ const userSchema = new mongoose.Schema({
 //Tạm thời check bằng lần cuối người dùng làm 1 tác vụ
 userSchema.pre('save', function (next) {
     this.lastActivity = new Date();
-    this.isActive = true;
     next();
 });
 userSchema.plugin(mongoosePaginate);
