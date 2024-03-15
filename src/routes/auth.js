@@ -25,7 +25,7 @@ const routerAuth = Router();
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "book",
+    folder: "avatar",
     format: async (req, file) => "png",
   },
 });
