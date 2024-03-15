@@ -27,12 +27,10 @@ const userSchema = new mongoose.Schema({
     },
     avt: {
       type: Object,
-      default: {publicId
-      : 
-      "book/v1710425407",
-      url
-      : 
-      "https://res.cloudinary.com/lamnt/image/upload/v1710425407/book/default-user-icon-8_p70szz.jpg"}
+      default: {
+        "publicId":"0",
+        "url":"https://res.cloudinary.com/lamnt/image/upload/v1710477395/book/fdokwbvx5zxrxrqvdrtj.png"
+      }
     },
     deliveryAddress: {
       type: String,
