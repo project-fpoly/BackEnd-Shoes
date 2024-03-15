@@ -182,7 +182,12 @@ export const deleteComment = async (req, res) => {
       });
     }
 
+    // Xóa tất cả các comment có parentId trùng với _id của comment đang xóa
+    await Comment.deleteMany({ parentId: comment._id });
+
+    // Xóa comment chính
     await Comment.findByIdAndDelete(req.params._id);
+
     return res.status(200).json({
       message: "Xoá thành công",
     });
@@ -192,6 +197,7 @@ export const deleteComment = async (req, res) => {
     });
   }
 };
+
 
 export const likeComment = async (req, res) => {
   const { commentId } = req.body;
