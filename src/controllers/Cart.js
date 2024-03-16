@@ -317,6 +317,11 @@ const updateCart = async (req, res) => {
     let cart;
     if (userId) {
       cart = await Cart.findOne({ user: userId });
+      cart.cartItems[index].size = size;
+      console.log( cart.cartItems[index].size = size)
+      if(quantity !==  undefined){
+        cart.cartItems[index].quantity = quantity;
+      }
     }
 
     if (!cart) {
@@ -332,8 +337,7 @@ const updateCart = async (req, res) => {
         .status(404)
         .json({ error: "Không tìm thấy sản phẩm trong giỏ hàng" });
     }
-    cart.cartItems[index].size = size;
-    cart.cartItems[index].quantity = quantity;
+    
     const updatedCartItems = [];
     for (const item of cart.cartItems) {
       const existingItemIndex = updatedCartItems.findIndex(
