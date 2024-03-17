@@ -374,6 +374,34 @@ const updateCart = async (req, res) => {
     return res.status(500).json({ error: "Lỗi máy chủ nội bộ" });
   }
 };
+const updateIsDeliveredOrder = async (req, res) => {
+  try {
+    // const { _id: userId } = req.user;
+    const { id } = req.params;
+    console.log(id);
+    const { isDelivered } = req.body;
+    // , user: userId.toString()
+    // Kiểm tra hợp lệ dữ liệu đầu vào
+    // const { error } = validateCart.validate(updatedCartData);
+    // if (error) {
+    //   return res.status(400).json({ error: error.details[0].message });
+    // }
+    console.log(isDelivered);
+    const updatedCart = await Bill.findByIdAndUpdate(
+      { _id: id },
+      { isDelivered: isDelivered },
+      { new: true }
+    );
+
+    if (!updatedCart) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json({ message: "Update order complete", updatedCart });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 const findUserOrders = async (req, res) => {
   try {
     const userId = req.user?._id;
@@ -581,4 +609,5 @@ export {
   getCartByIdAdmin,
   findUserOrders,
   updateCart,
+  updateIsDeliveredOrder
 };
