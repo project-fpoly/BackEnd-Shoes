@@ -102,16 +102,19 @@ const addCartItems = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { shippingAddress, cartSession } = req.body;
+    const { shippingAddress, cartItems } = req.body;
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
-    // const productModel = await Product.findById(product);
-    // console.log(productModel);
+
     let cart;
 
     if (userId) {
       // Người dùng đã đăng nhập
       cart = await Cart.findOne({ user: userId }).populate("cartItems.product");
+      if (!cart) {
+        // Kiểm tra giỏ hàng có sản phẩm không
+        cart = { cartItems };
+      }
     } else {
       // Người dùng không đăng nhập
       // Người dùng không đăng nhập
@@ -121,11 +124,6 @@ const createOrder = async (req, res) => {
       }
 
       cart = req.body;
-    }
-
-    if (!cart) {
-      // Kiểm tra giỏ hàng có sản phẩm không
-      return res.status(400).json({ error: "Giỏ hàng trống" });
     }
 
     const generateTrackingNumber = () => {
@@ -140,6 +138,11 @@ const createOrder = async (req, res) => {
       return trackingNumber;
     };
     // Tạo đơn hàng từ giỏ hàng và sử dụng trường totalPrice từ giỏ hàng
+    let totalPrice = 0;
+    cart.cartItems.forEach((item) => {
+      totalPrice += item.price * item.quantity;
+      console.log(item.quantity);
+    });
 
     const order = new Bill({
       user: userId,
@@ -154,7 +157,7 @@ const createOrder = async (req, res) => {
         })),
       ],
       shippingAddress,
-      totalPrice: cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
+      totalPrice: totalPrice ? totalPrice : cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
       trackingNumber: generateTrackingNumber(),
     });
 
@@ -171,7 +174,7 @@ const createOrder = async (req, res) => {
         from: GMAIL_ADMIN,
         to: userEmail,
         subject: "Bạn đã đặt hàng thành công",
-        text: `"Đơn hàng của bạn đã được đặt thành công !Mã vận đơn:${order.trackingNumber} "`,
+        text: `"Đơn hàng của bạn đã được đặt thành công !Mã vận đơn: ${order.trackingNumber}"`,
       };
 
       transporter.sendMail(mailOptions, (error, info) => {
@@ -310,37 +313,48 @@ const updateCart = async (req, res) => {
   try {
     const productId = req.params.id;
     const userId = req.user?._id;
-    const { size, quantity } = req.body;
+    const { index, size, quantity } = req.body;
     let cart;
-
     if (userId) {
-      // Người dùng đã đăng nhập
       cart = await Cart.findOne({ user: userId });
+      cart.cartItems[index].size = size;
+      console.log( cart.cartItems[index].size = size)
+      if(quantity !==  undefined){
+        cart.cartItems[index].quantity = quantity;
+      }
     }
 
     if (!cart) {
       return res.status(404).json({ error: "Giỏ hàng không tồn tại" });
     }
 
-    // Tìm cartItem trong giỏ hàng dựa trên productId
     const productIndex = cart.cartItems.findIndex(
       (item) => item.product.toString() === productId
     );
 
     if (productIndex === -1) {
-      // Không tìm thấy sản phẩm trong giỏ hàng
       return res
         .status(404)
         .json({ error: "Không tìm thấy sản phẩm trong giỏ hàng" });
     }
-
-    // Cập nhật thông tin sản phẩm trong giỏ hàng
-    cart.cartItems[productIndex].size = size;
-    cart.cartItems[productIndex].quantity = quantity;
-
-    // Lưu thay đổi vào cơ sở dữ liệu
-
-    // Lưu giỏ hàng vào cơ sở dữ liệu nếu người dùng đã đăng nhập
+    
+    const updatedCartItems = [];
+    for (const item of cart.cartItems) {
+      const existingItemIndex = updatedCartItems.findIndex(
+        (updatedItem) =>
+          updatedItem.product.toString() === item.product.toString() &&
+          updatedItem.size === item.size
+      );
+      if (existingItemIndex !== -1) {
+        // Nếu đã có mục trùng, cộng thêm quantity
+        updatedCartItems[existingItemIndex].quantity += item.quantity;
+      } else {
+        // Nếu không, thêm mục mới vào mảng updatedCartItems
+        updatedCartItems.push(item);
+      }
+    }
+    // Gán lại mảng cartItems với các mục đã được hợp nhất
+    cart.cartItems = updatedCartItems;
     let totalPrice = 0;
     for (const item of cart.cartItems) {
       const product = await Product.findById(item.product);
@@ -348,6 +362,7 @@ const updateCart = async (req, res) => {
     }
 
     cart.totalPrice = totalPrice;
+
     await cart.save();
 
     return res.json({

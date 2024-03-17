@@ -85,32 +85,47 @@ export const getAllComments = async (req, res) => {
       },
     ]);
       
+    // Modify userId for comments where userId is null or not found
+    data.docs.forEach(comment => {
+      if (!comment.userId) {
+        comment.userId = {
+          userName: "None",
+          _id: "1", 
+          role: "admin",
+          avt:{
+            "publicId":"0",
+            "url":"https://res.cloudinary.com/lamnt/image/upload/v1710477395/book/fdokwbvx5zxrxrqvdrtj.png"
+          }
+        };
+      }
+    });
+
     return res.status(200).json({
-        ...data,
-        docs: data.docs.map(comment => ({
-          ...comment.toObject(),
-          likes: comment.likes.map(like => ({
-            userName: like.userName,
-            _id: like._id,
-            role: like.role,
-            avt: like.avt,
-          })),
-          parentId: comment.parentId ? {
-            ...comment.parentId.toObject(),
-            userId: {
-              userName: comment.parentId.userId.userName,
-              _id: comment.parentId.userId._id,
-              role: comment.parentId.userId.role,
-              avt: comment.parentId.userId.avt,
-            },
-          } : null,
-          userId: {
-            userName: comment.userId.userName,
-            _id: comment.userId._id,
-            role: comment.userId.role,
-            avt: comment.userId.avt,
-          },
+      ...data,
+      docs: data.docs.map(comment => ({
+        ...comment.toObject(),
+        likes: comment.likes.map(like => ({
+          userName: like.userName,
+          _id: like._id,
+          role: like.role,
+          avt: like.avt,
         })),
+        parentId: comment.parentId ? {
+          ...comment.parentId.toObject(),
+          userId: {
+            userName: comment.parentId.userId.userName,
+            _id: comment.parentId.userId._id,
+            role: comment.parentId.userId.role,
+            avt: comment.parentId.userId.avt,
+          },
+        } : null,
+        userId: {
+          userName: comment.userId.userName,
+          _id: comment.userId._id,
+          role: comment.userId.role,
+          avt: comment.userId.avt,
+        },
+      })),
     });
   } catch (error) {
     res.status(500).json({
@@ -167,7 +182,12 @@ export const deleteComment = async (req, res) => {
       });
     }
 
+    // Xóa tất cả các comment có parentId trùng với _id của comment đang xóa
+    await Comment.deleteMany({ parentId: comment._id });
+
+    // Xóa comment chính
     await Comment.findByIdAndDelete(req.params._id);
+
     return res.status(200).json({
       message: "Xoá thành công",
     });
@@ -177,6 +197,7 @@ export const deleteComment = async (req, res) => {
     });
   }
 };
+
 
 export const likeComment = async (req, res) => {
   const { commentId } = req.body;

@@ -34,7 +34,6 @@ let socket;
 // Socket.io implementation
 io.on("connection", (s) => {
   socket = s;
-  console.log(socket.userId);
   socket.on("new_user_login",async  (data) => {
     io.emit("new_user_login", { message: data.message, _id: data._id });
      await User.findByIdAndUpdate(data._id, { isActive: true });
@@ -50,7 +49,7 @@ io.on("connection", (s) => {
   });
   socket.on("disconnect", async () => {
     await User.findByIdAndUpdate(socket.userId, { isActive: false });
-    io.emit("update_user_status", { _id: socket._id, isActive: false });
+    io.emit("update_user_status", { _id: socket.userId, isActive: false });
   });
 });
 
