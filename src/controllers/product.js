@@ -330,7 +330,7 @@ const tryDeleteProduct = async (req, res) => {
     }
 
     // Thay đổi trường 'delete' thành true
-    product.delete = true;
+    product.isDeleted = true;
 
     // Cập nhật sản phẩm
     await product.save();
