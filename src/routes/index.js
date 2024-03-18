@@ -8,6 +8,7 @@ import routerComment from "./comment";
 import routerNotification from "./notification";
 import routerFavourite from "./fav";
 import routerVoucher from "./voucher";
+import routerSale from "./sale";
 
 const router = express.Router();
 router.use("/auth", routerAuth);
@@ -21,5 +22,6 @@ router.use("/order", routerCart);
 router.use("/notification", routerNotification);
 router.use("/fav", routerFavourite);
 router.use("/voucher", routerVoucher);
+router.use("/sale", routerSale);
 
 export default router;
