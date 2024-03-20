@@ -102,12 +102,11 @@ const addCartItems = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { shippingAddress, cartItems } = req.body;
+    const { shippingAddress, cartItems, payment_method } = req.body;
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
-
     let cart;
-
+    console.log(payment_method);
     if (userId) {
       // Người dùng đã đăng nhập
       cart = await Cart.findOne({ user: userId }).populate("cartItems.product");
@@ -156,6 +155,12 @@ const createOrder = async (req, res) => {
           color: item.color,
         })),
       ],
+      payment_method: payment_method,
+      isDelivered:
+        payment_method === "Thanh toán tiền mặt"
+          ? "Chờ xác nhận"
+          : "Chờ lấy hàng",
+      isPaid: payment_method === "Thanh toán tiền mặt" ? false : true,
       shippingAddress,
       totalPrice: totalPrice ? totalPrice : cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
       trackingNumber: generateTrackingNumber(),
@@ -187,7 +192,13 @@ const createOrder = async (req, res) => {
     }
 
     await order.save();
-
+    const a = cart.cartItems.map((product) => console.log(product.product));
+    console.log(a);
+    const result = await Product.find({
+      _id: { $in: a.product._id },
+      sizes: a.size,
+    });
+    console.log(result, "restulssdads");
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
     if (userId) {
       await Cart.findByIdAndDelete(cart._id);
@@ -318,8 +329,8 @@ const updateCart = async (req, res) => {
     if (userId) {
       cart = await Cart.findOne({ user: userId });
       cart.cartItems[index].size = size;
-      console.log( cart.cartItems[index].size = size)
-      if(quantity !==  undefined){
+      console.log((cart.cartItems[index].size = size));
+      if (quantity !== undefined) {
         cart.cartItems[index].quantity = quantity;
       }
     }
@@ -337,7 +348,7 @@ const updateCart = async (req, res) => {
         .status(404)
         .json({ error: "Không tìm thấy sản phẩm trong giỏ hàng" });
     }
-    
+
     const updatedCartItems = [];
     for (const item of cart.cartItems) {
       const existingItemIndex = updatedCartItems.findIndex(
@@ -609,5 +620,5 @@ export {
   getCartByIdAdmin,
   findUserOrders,
   updateCart,
-  updateIsDeliveredOrder
+  updateIsDeliveredOrder,
 };
