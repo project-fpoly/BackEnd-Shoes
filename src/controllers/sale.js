@@ -26,6 +26,8 @@ export const createSale = async (req, res) => {
         message: "Không tìm thấy tất cả sản phẩm trong cơ sở dữ liệu",
       });
     }
+
+    // Tạo sale mới
     const newSale = new Sale({
       ...req.body,
       create_by: {
@@ -35,7 +37,10 @@ export const createSale = async (req, res) => {
       },
     });
 
+    // Lưu sale mới vào cơ sở dữ liệu
     const savedSale = await newSale.save();
+
+    await Product.updateMany({ _id: { $in: productIds } }, { $set: { sale: savedSale._id } });
 
     res.status(200).json({
       message: "Tạo Sale thành công",
@@ -49,6 +54,7 @@ export const createSale = async (req, res) => {
     });
   }
 };
+
 
 export const getSales = async (req, res) => {
   try {
@@ -92,7 +98,6 @@ export const updateSale = async (req, res) => {
     const productIds = req.body.product;
     const existingProducts = await Product.find({ _id: { $in: productIds } });
 
-    // Kiểm tra xem số lượng sản phẩm đã tìm thấy có bằng với số lượng sản phẩm gửi lên từ yêu cầu hay không
     if (existingProducts.length !== productIds.length) {
       return res.status(400).json({
         message: "Không tìm thấy tất cả sản phẩm trong cơ sở dữ liệu",
@@ -102,6 +107,7 @@ export const updateSale = async (req, res) => {
     const updatedSale = await Sale.findByIdAndUpdate(id, req.body, {
       new: true,
     });
+    await Product.updateMany({ _id: { $in: productIds } }, { $set: { sale: updatedSale._id } });
 
     res.status(200).json({
       message: "Cập nhật Sale thành công",

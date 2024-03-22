@@ -31,6 +31,10 @@ const voucherSchema = new mongoose.Schema(
       type: Object,
       required: false,
     },
+    start_date: {
+      type: Date,
+      required: true,
+    },
     expiration_date: {
       type: Date,
       required: true,

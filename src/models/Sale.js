@@ -11,10 +11,6 @@ const saleSchema = new mongoose.Schema(
       type: Number,
       default: true,
     },
-    price_order: {
-      type: Number,
-      default: true,
-    },
     product: {
       type: Array,
       default: true,
@@ -26,6 +22,10 @@ const saleSchema = new mongoose.Schema(
     create_by: {
       type: Object,
       required: false,
+    },
+    start_date: {
+      type: Date,
+      required: true,
     },
     expiration_date: {
       type: Date,

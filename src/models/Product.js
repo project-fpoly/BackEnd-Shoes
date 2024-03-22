@@ -55,15 +55,8 @@ const ProductSchema = new Schema({
     },
   },
   sale: {
-    type: Number,
-    required: true,
-    default: 0,
-    validate: {
-      validator: function (value) {
-        return value >= 0;
-      },
-      message: "Giá sale phải lớn hơn hoặc bằng 0",
-    },
+    type: Object,
+    required: false,
   },
   discount: {
     type: Number,

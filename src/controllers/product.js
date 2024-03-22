@@ -5,6 +5,7 @@ import Category from "../models/Category.js";
 import { isValid } from "date-fns";
 import Notification from "../models/Notification.js";
 import { createNotificationForAdmin } from "./notification.js";
+import Sale from "../models/Sale.js";
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./public/images/product");
@@ -270,6 +271,7 @@ const getAllProduct = async (req, res) => {
 };
 const getDetailProduct = async (req, res) => {
   try {
+    // Tìm sản phẩm theo ID
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -278,9 +280,28 @@ const getDetailProduct = async (req, res) => {
       });
     }
 
+    if (product.sale) {
+      const saleInfo = await Sale.findById(product.sale);
+      if (saleInfo) {
+        const saleObject = {
+          _id: saleInfo._id,
+          name: saleInfo.Name,
+          discount: saleInfo.discout
+        };
+        product.sale = saleObject;
+      } else {
+        product.sale = {
+          _id: "0",
+          name: "Không có thông tin giảm giá",
+          discount: 0
+        };
+      }
+    }
+
+    // Trả về thông tin chi tiết sản phẩm
     res.status(200).json({
       message: "Lấy chi tiết sản phẩm thành công",
-      data: product
+      data: product,
     });
 
   } catch (error) {
@@ -290,6 +311,7 @@ const getDetailProduct = async (req, res) => {
     });
   }
 };
+
 
 const updateProduct = async (req, res) => {
   try {
