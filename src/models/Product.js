@@ -140,7 +140,7 @@ const ProductSchema = new Schema({
     required: false,
     default: 0,
   },
-  delete: {
+  isDeleted: {
     type: Boolean,
     required: false,
     default: false,

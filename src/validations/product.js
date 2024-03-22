@@ -7,7 +7,7 @@ const productValidator = Joi.object({
   description: Joi.string().required(),
   categoryId: Joi.string().allow(null).optional(),
   price: Joi.number().min(0).required(),
-  sale: Joi.number().min(0).default(0),
+  sale: Joi.object().min(0).default(0),
   discount: Joi.number(),
   quantity: Joi.number().min(0).required(),
   sold_count: Joi.number().default(0),
@@ -31,7 +31,7 @@ const productValidator = Joi.object({
   isPublished: Joi.boolean().default(false),
   publishedDate: Joi.date(),
   hits: Joi.number().default(0),
-  delete:Joi.boolean().default(false),
+  isDeleted:Joi.boolean().default(false),
 });
 
 export default productValidator;

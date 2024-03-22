@@ -1,5 +1,5 @@
 import Product from "../models/Product.js";
-import productValidator from "../validations/Product.js";
+import productValidator from "../validations/product.js";
 import multer from "multer";
 import Category from "../models/Category.js";
 import { isValid } from "date-fns";
@@ -149,7 +149,7 @@ const getAllProduct = async (req, res) => {
       searchCondition.gender = genderFilter;
     }
     if (deleteFilter) {
-      searchCondition.delete = deleteFilter;
+      searchCondition.isDeleted = deleteFilter;
     }
 
     const sortOptions = {};
@@ -352,7 +352,7 @@ const tryDeleteProduct = async (req, res) => {
     }
 
     // Thay đổi trường 'delete' thành true
-    product.delete = true;
+    product.isDeleted = true;
 
     // Cập nhật sản phẩm
     await product.save();
@@ -388,7 +388,7 @@ const deleteProduct = async (req, res) => {
     await Product.findByIdAndDelete(req.params.id);
 
     // Thêm thông báo cho admin
-    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product", req.user._id,"admin");
+    await createNotificationForAdmin(`Sản phẩm ${product.name} đã bị xoá bởi ${req.user.email}`, "product", req.user._id, "admin");
     return res.status(200).json({
       message: "Xóa sản phẩm thành công!",
       data: product
@@ -407,7 +407,7 @@ export {
   getAllProduct,
   getDetailProduct,
   updateProduct,
-  tryDeleteProduct, 
+  tryDeleteProduct,
   deleteProduct,
   upload,
 };
