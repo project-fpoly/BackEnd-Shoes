@@ -30,7 +30,7 @@ routerCart.put("/carts/:id", authenticateToken, updateCart); // Xóa một mục
 routerCart.post("/bills", authenticateToken, createOrder); // Tạo một đơn hàng mới
 routerCart.get("/bills", authenticateToken, findUserOrders); // Lấy danh sách các đơn hàng của người dùng
 routerCart.get("/bills/:id", authenticateToken, getOrderById); // Lấy thông tin chi tiết của một đơn hàng
-routerCart.put("/bills/:id", authenticateToken, updateIsDeliveredOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
+routerCart.put("/bills/:id", authenticateToken, updateIsDeliveredOrder); // Cập nhật thông tin của một đơn hàng(cho người dùng)
 // Admin Routes
 routerCart.get("/admin/bills", checkPermissionManager, getAllOrderAdmin); // Lấy danh sách tất cả đơn hàng (cho quản trị viên)
 routerCart.delete("/admin/bills/:id", checkPermissionManager, deleteOrder); // Xóa một đơn hàng(cho quản trị viên)
