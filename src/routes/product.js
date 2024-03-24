@@ -4,6 +4,7 @@ import {
   getDetailProduct,
   updateProduct,
   deleteProduct,
+  RestoreProduct,
   tryDeleteProduct,
   upload,
 } from "../controllers/product.js";
@@ -16,6 +17,7 @@ routerProduct.post("/", addProduct);
 routerProduct.get("/", getAllProduct);
 routerProduct.put("/:id", updateProduct);
 routerProduct.patch("/:id", tryDeleteProduct);
+routerProduct.patch("/:id", RestoreProduct);
 routerProduct.delete("/:id", checkPermission, deleteProduct);
 routerProduct.get("/:id", getDetailProduct);
 

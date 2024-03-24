@@ -55,7 +55,8 @@ const ProductSchema = new Schema({
     },
   },
   sale: {
-    type: Object,
+    type: Schema.Types.ObjectId,
+    ref: "Sales",
     required: false,
   },
   discount: {
