@@ -172,6 +172,12 @@ const getAllProduct = async (req, res) => {
       case "desc_rate":
         sortOrderMessage = "Số lượt đánh giá sản phẩm giảm dần";
         break;
+      case "asc_release_date":
+        sortOrderMessage = "Ngày ra mắt tăng dần";
+        break;
+      case "desc_release_date":
+        sortOrderMessage = "Ngày ra mắt giảm dần";
+        break;
       default:
         sortOrderMessage = "mặc định";
         break;
@@ -185,9 +191,13 @@ const getAllProduct = async (req, res) => {
       totalPages: result.totalPages,
       pageSize: result.pageSize,
       page: result.page,
-      color: result.colors,
-      material: result.materials,
-      data: result.products,
+      data: {
+        colors: result.colors,
+        materials: result.materials,
+        tech_specs: result.tech_specs,
+        sizes: result.sizes,
+        products: result.products,
+      }
     });
   } catch (error) {
     console.log(error);
@@ -197,7 +207,8 @@ const getAllProduct = async (req, res) => {
     });
   }
 };
-const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter) => {
+const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFilter,
+   materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter) => {
   const searchKeywordRegex = new RegExp(searchKeyword || "", "i");
   let searchCondition = {
     $or: [{ name: searchKeywordRegex }],
@@ -247,6 +258,9 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
   if (deleteFilter) {
     searchCondition.isDeleted = deleteFilter;
   }
+  if (categoryNameFilter) {
+    searchCondition["category.name"] = categoryNameFilter; 
+  }
 
   return searchCondition;
 };
@@ -273,6 +287,10 @@ const buildSortOptions = (sortOrder) => {
     sortOptions.rating = 1;
   } else if (sortOrder === "desc_rate") {
     sortOptions.rating = -1;
+  } else if (sortOrder === "asc_release_date") {
+    sortOptions.release_date = 1;
+  } else if (sortOrder === "desc_release_date") {
+    sortOptions.release_date = -1;
   } else {
     sortOptions.price = 0;
   }
@@ -294,7 +312,16 @@ const getProductsWithPagination = async (searchCondition, options) => {
 const buildResult = (populatedProducts, total, page, totalPages, pageSize) => {
   const materials = populatedProducts.map((product) => product.material);
   const colors = populatedProducts.map((product) => product.color);
+  const tech_specs = populatedProducts.map((product) => product.tech_specs);
   const stockStatuses = populatedProducts.map((product) => product.stock_status);
+  const allSizes = [];
+  populatedProducts.forEach(product => {
+    product.sizes.forEach(size => {
+      if (!allSizes.includes(size.name)) {
+        allSizes.push(size.name);
+      }
+    });
+  });
 
   const result = {
     page: page,
@@ -305,6 +332,8 @@ const buildResult = (populatedProducts, total, page, totalPages, pageSize) => {
     colors: Array.from(new Set(colors)),
     stockStatuses: Array.from(new Set(stockStatuses)),
     products: populatedProducts,
+    tech_specs: Array.from(new Set(tech_specs)),
+    sizes: allSizes,
   };
 
   return result;
