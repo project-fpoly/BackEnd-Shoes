@@ -191,13 +191,8 @@ const getAllProduct = async (req, res) => {
       totalPages: result.totalPages,
       pageSize: result.pageSize,
       page: result.page,
-      data: {
-        colors: result.colors,
-        materials: result.materials,
-        tech_specs: result.tech_specs,
-        sizes: result.sizes,
-        products: result.products,
-      }
+      data: result.products,
+
     });
   } catch (error) {
     console.log(error);
@@ -207,8 +202,9 @@ const getAllProduct = async (req, res) => {
     });
   }
 };
+
 const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFilter,
-   materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter) => {
+  materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter) => {
   const searchKeywordRegex = new RegExp(searchKeyword || "", "i");
   let searchCondition = {
     $or: [{ name: searchKeywordRegex }],
@@ -259,7 +255,7 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
     searchCondition.isDeleted = deleteFilter;
   }
   if (categoryNameFilter) {
-    searchCondition["category.name"] = categoryNameFilter; 
+    searchCondition["category.name"] = categoryNameFilter;
   }
 
   return searchCondition;
@@ -337,6 +333,75 @@ const buildResult = (populatedProducts, total, page, totalPages, pageSize) => {
   };
 
   return result;
+};
+
+export const fetchMaterial = async (req, res) => {
+  try {
+    const products = await Product.find().populate("categoryId", "name").populate("sale", "Name discout");
+    const materials = products.map((product) => product.material);
+    return res.status(200).json({
+      message: "Lấy được danh sách chất liệu của sản phẩm thành công",
+      data: Array.from(new Set(materials)),
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Lỗi hệ thống"
+    });
+  }
+};
+export const fetchColor = async (req, res) => {
+  try {
+    const products = await Product.find().populate("categoryId", "name").populate("sale", "Name discout");
+    const colors = products.map((product) => product.color);
+    return res.status(200).json({
+      message: "Lấy được danh sách chất liệu của sản phẩm thành công",
+      data: Array.from(new Set(colors)),
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Lỗi hệ thống"
+    });
+  }
+};
+export const fetchTechSpec = async (req, res) => {
+  try {
+    const products = await Product.find().populate("categoryId", "name ").populate("sale", "Name discout");
+    const tech_specs = products.map((product) => product.tech_specs);
+    return res.status(200).json({
+      message: "Lấy được danh sách size của sản phẩm thành công",
+      data: Array.from(new Set(tech_specs)),
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Lỗi hệ thống"
+    });
+  }
+};
+
+export const fetchSize = async (req, res) => {
+  try {
+    const products = await Product.find().populate("categoryId", "name ").populate("sale", "Name discout");
+    const allSizes = [];
+    products.forEach(product => {
+      product.sizes.forEach(size => {
+        if (!allSizes.includes(size.name)) {
+          allSizes.push(size.name);
+        }
+      });
+    });
+    return res.status(200).json({
+      message: "Lấy được danh sách size của sản phẩm thành công",
+      data: allSizes,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Lỗi hệ thống"
+    });
+  }
 };
 
 // GetDetail
