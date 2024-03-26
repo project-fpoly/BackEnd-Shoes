@@ -19,15 +19,14 @@ const routerProduct = express.Router();
 
 routerProduct.post("/", addProduct);
 routerProduct.get("/", getAllProduct);
-
+routerProduct.get("/material", fetchMaterial);
+routerProduct.get("/color", fetchColor);
+routerProduct.get("/size", fetchSize);
+routerProduct.get("/tech_spec", fetchTechSpec);
 routerProduct.put("/:id", updateProduct);
 routerProduct.patch("/:id", tryDeleteProduct);
 routerProduct.patch("/:id", RestoreProduct);
 routerProduct.delete("/:id", checkPermission, deleteProduct);
 routerProduct.get("/:id", getDetailProduct);
-routerProduct.get("/material", fetchMaterial);
-routerProduct.get("/color", fetchColor);
-routerProduct.get("/size", fetchSize);
-routerProduct.get("/tech_spec", fetchTechSpec);
 
 export default routerProduct;
