@@ -337,7 +337,7 @@ const buildResult = (populatedProducts, total, page, totalPages, pageSize) => {
 
 export const fetchMaterial = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name").populate("sale", "Name discout");
+    const products = await Product.find().populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date");
     const materials = products.map((product) => product.material);
     return res.status(200).json({
       message: "Lấy được danh sách chất liệu của sản phẩm thành công",
@@ -352,7 +352,7 @@ export const fetchMaterial = async (req, res) => {
 };
 export const fetchColor = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name").populate("sale", "Name discout");
+    const products = await Product.find().populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date");
     const colors = products.map((product) => product.color);
     return res.status(200).json({
       message: "Lấy được danh sách chất liệu của sản phẩm thành công",
@@ -367,10 +367,10 @@ export const fetchColor = async (req, res) => {
 };
 export const fetchTechSpec = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name ").populate("sale", "Name discout");
+    const products = await Product.find().populate("categoryId", "name ").populate("sale", "name discount description quantity expiration_date");
     const tech_specs = products.map((product) => product.tech_specs);
     return res.status(200).json({
-      message: "Lấy được danh sách size của sản phẩm thành công",
+      message: "Lấy được danh sách tech_specs của sản phẩm thành công",
       data: Array.from(new Set(tech_specs)),
     });
   } catch (error) {
@@ -383,7 +383,7 @@ export const fetchTechSpec = async (req, res) => {
 
 export const fetchSize = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name ").populate("sale", "Name discout");
+    const products = await Product.find().populate("categoryId", "name ").populate("sale", "name discount description quantity expiration_date");
     const allSizes = [];
     products.forEach(product => {
       product.sizes.forEach(size => {
@@ -408,7 +408,7 @@ export const fetchSize = async (req, res) => {
 const getDetailProduct = async (req, res) => {
   try {
     // Tìm sản phẩm theo ID
-    const product = await Product.findById(req.params.id).populate("categoryId", "name").populate("sale", "Name discout");
+    const product = await Product.findById(req.params.id).populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date ");
 
     if (!product) {
       return res.status(404).json({
