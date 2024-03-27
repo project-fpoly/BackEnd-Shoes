@@ -55,7 +55,8 @@ const ProductSchema = new Schema({
     },
   },
   sale: {
-    type: Object,
+    type: Schema.Types.ObjectId,
+    ref: "Sales",
     required: false,
   },
   discount: {
@@ -140,7 +141,7 @@ const ProductSchema = new Schema({
     required: false,
     default: 0,
   },
-  delete: {
+  isDeleted: {
     type: Boolean,
     required: false,
     default: false,
