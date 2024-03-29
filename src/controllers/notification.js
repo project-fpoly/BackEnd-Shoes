@@ -7,26 +7,22 @@ export const getAllNotifications = async (req, res) => {
     const notifications = await Notification.find().sort({ createdAt: -1 });
     res.status(200).json(notifications);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Đã xảy ra lỗi khi lấy thông báo",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi lấy thông báo",
+      error: error.message,
+    });
   }
 };
 export const getOneNotifications = async (req, res) => {
   try {
-    const id= req.params.notificationId
+    const id = req.params.notificationId;
     const notifications = await Notification.findById(id);
     res.status(200).json(notifications);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Đã xảy ra lỗi khi lấy thông báo",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi lấy thông báo",
+      error: error.message,
+    });
   }
 };
 
@@ -34,19 +30,46 @@ export const getOneNotifications = async (req, res) => {
 export const getUserNotifications = async (req, res) => {
   try {
     const { role } = req.user;
-    const notifications = await Notification.find({ recipientType: role }).sort({ createdAt: -1 });
-     res.status(200).json(notifications);
-  } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Đã xảy ra lỗi khi lấy thông báo",
-        error: error.message,
+    const { type } = req.query;
+    if (role == "member") {
+      const query = { recipientType: role };
+      const notifications = await Notification.find(query).sort({
+        createdAt: -1,
       });
+      return res.status(200).json(notifications);
+    } else {
+      if (
+        type &&
+        ![
+          "user",
+          "admin",
+          "manager",
+          "order",
+          "promotion",
+          "product",
+          "category",
+        ].includes(type)
+      ) {
+        return res.status(400).json({ message: "Loại thông báo không hợp lệ" });
+      }
+      const query = { recipientType: role };
+      if (type) {
+        query.type = type;
+      }
+      const notifications = await Notification.find(query).sort({
+        createdAt: -1,
+      });
+      res.status(200).json(notifications);
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi lấy thông báo",
+      error: error.message,
+    });
   }
 };
 
-export const createNotificationForAdmin = async (message, type,_id,role) => {
+export const createNotificationForAdmin = async (message, type, _id, role) => {
   try {
     const newNotification = new Notification({
       userId: _id,
@@ -62,7 +85,7 @@ export const createNotificationForAdmin = async (message, type,_id,role) => {
   } catch (error) {
     return res.status(500).json({
       message: "Đã xảy ra lỗi khi tạo thông báo cho admin",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -78,7 +101,7 @@ export const createNotification = async (req, res) => {
     }
 
     const newNotification = new Notification({
-      userId:req.user._id,
+      userId: req.user._id,
       message,
       type,
       isRead: false,
@@ -88,12 +111,10 @@ export const createNotification = async (req, res) => {
     const savedNotification = await newNotification.save();
     res.status(201).json(savedNotification);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Đã xảy ra lỗi khi tạo mới thông báo",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi tạo mới thông báo",
+      error: error.message,
+    });
   }
 };
 
@@ -115,12 +136,10 @@ export const deleteNotification = async (req, res) => {
       .status(200)
       .json({ message: "Xóa thông báo thành công", deletedNotification });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Đã xảy ra lỗi khi xóa thông báo",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi xóa thông báo",
+      error: error.message,
+    });
   }
 };
 export const updateNotification = async (req, res) => {
@@ -135,7 +154,9 @@ export const updateNotification = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy thông báo" });
     }
     if (notification.isRead) {
-      return res.status(400).json({ message: "Thông báo đã được đọc trước đó" });
+      return res
+        .status(400)
+        .json({ message: "Thông báo đã được đọc trước đó" });
     }
     // Cập nhật trạng thái isRead thành true
     notification.isRead = true;
@@ -143,7 +164,12 @@ export const updateNotification = async (req, res) => {
     // Lưu thông báo đã được cập nhật
     await notification.save();
 
-    res.status(200).json({ message: "Cập nhật thông báo thành công", updatedNotification: notification });
+    res
+      .status(200)
+      .json({
+        message: "Cập nhật thông báo thành công",
+        updatedNotification: notification,
+      });
   } catch (error) {
     res.status(500).json({
       message: "Đã xảy ra lỗi khi cập nhật thông báo",

@@ -3,15 +3,11 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 const saleSchema = new mongoose.Schema(
   {
-    Name: {
+    name: {
       type: String,
       required: true,
     },
-    discout: {
-      type: Number,
-      default: true,
-    },
-    price_order: {
+    discount: {
       type: Number,
       default: true,
     },
@@ -26,6 +22,10 @@ const saleSchema = new mongoose.Schema(
     create_by: {
       type: Object,
       required: false,
+    },
+    start_date: {
+      type: Date,
+      required: true,
     },
     expiration_date: {
       type: Date,

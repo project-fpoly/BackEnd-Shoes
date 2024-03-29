@@ -11,6 +11,7 @@ export const categorySchema = Joi.object({
     imageUrl: Joi.string(),
     status: Joi.string().valid("active", "inactive").default("active"),
     viewCount: Joi.number().default(0),
+    products:Joi.array().default([]),
 });
 
 export default categorySchema;

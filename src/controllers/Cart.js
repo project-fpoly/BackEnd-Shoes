@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import Product from "../models/Product.js";
 import Bill from "../models/Bill.js";
 import User from "../models/User.js";
+import { createNotificationForAdmin } from "./notification.js";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
@@ -192,13 +193,14 @@ const createOrder = async (req, res) => {
     }
 
     await order.save();
-    const a = cart.cartItems.map((product) => console.log(product.product));
-    console.log(a);
-    const result = await Product.find({
-      _id: { $in: a.product._id },
-      sizes: a.size,
-    });
-    console.log(result, "restulssdads");
+    // Thêm thông báo cho admin
+    await createNotificationForAdmin(
+      `Bạn có đơn hàng ${order.trackingNumber}, được đặt bởi ${userEmail}`,
+      "order",
+      req.user._id,
+      "admin"
+    );
+
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
     if (userId) {
       await Cart.findByIdAndDelete(cart._id);
@@ -407,7 +409,14 @@ const updateIsDeliveredOrder = async (req, res) => {
     if (!updatedCart) {
       return res.status(404).json({ error: "Order not found" });
     }
-
+    if (updatedCart.isDelivered == "Đã hủy") {
+      createNotificationForAdmin(
+        `Đơn hàng ${updatedCart.trackingNumber}, đã hủy bởi người dùng`,
+        "order",
+        req.user._id,
+        "admin"
+      );
+    }
     res.json({ message: "Update order complete", updatedCart });
   } catch (error) {
     res.status(500).json({ error: error.message });

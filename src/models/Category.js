@@ -22,6 +22,11 @@ const categorySchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        products: {
+            type: Array,
+            default: [],
+            required: false
+        }
     },
     { versionKey: false, timestamps: true }
 );

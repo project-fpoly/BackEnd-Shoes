@@ -61,6 +61,7 @@ io.on("connection", (s) => {
   });
   socket.on("newNotification", (data) => {
     io.emit("newNotification", { message: data.message });
+    console.log("thong bao ne");
   });
   socket.on("log_out", async (data) => {
     await User.findByIdAndUpdate(data.userId, { isActive: false });
