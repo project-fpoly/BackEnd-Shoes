@@ -103,12 +103,11 @@ const addCartItems = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { shippingAddress, cartItems } = req.body;
+    const { shippingAddress, cartItems, payment_method } = req.body;
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
-
     let cart;
-
+    console.log(payment_method);
     if (userId) {
       // Người dùng đã đăng nhập
       cart = await Cart.findOne({ user: userId }).populate("cartItems.product");
@@ -157,6 +156,12 @@ const createOrder = async (req, res) => {
           color: item.color,
         })),
       ],
+      payment_method: payment_method,
+      isDelivered:
+        payment_method === "Thanh toán tiền mặt"
+          ? "Chờ xác nhận"
+          : "Chờ lấy hàng",
+      isPaid: payment_method === "Thanh toán tiền mặt" ? false : true,
       shippingAddress,
       totalPrice: totalPrice ? totalPrice : cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
       trackingNumber: generateTrackingNumber(),
@@ -326,8 +331,8 @@ const updateCart = async (req, res) => {
     if (userId) {
       cart = await Cart.findOne({ user: userId });
       cart.cartItems[index].size = size;
-      console.log( cart.cartItems[index].size = size)
-      if(quantity !==  undefined){
+      console.log((cart.cartItems[index].size = size));
+      if (quantity !== undefined) {
         cart.cartItems[index].quantity = quantity;
       }
     }
@@ -345,7 +350,7 @@ const updateCart = async (req, res) => {
         .status(404)
         .json({ error: "Không tìm thấy sản phẩm trong giỏ hàng" });
     }
-    
+
     const updatedCartItems = [];
     for (const item of cart.cartItems) {
       const existingItemIndex = updatedCartItems.findIndex(
@@ -404,7 +409,7 @@ const updateIsDeliveredOrder = async (req, res) => {
     if (!updatedCart) {
       return res.status(404).json({ error: "Order not found" });
     }
-    if(updatedCart.isDelivered=="Đã hủy"){
+    if (updatedCart.isDelivered == "Đã hủy") {
       createNotificationForAdmin(
         `Đơn hàng ${updatedCart.trackingNumber}, đã hủy bởi người dùng`,
         "order",
@@ -624,5 +629,5 @@ export {
   getCartByIdAdmin,
   findUserOrders,
   updateCart,
-  updateIsDeliveredOrder
+  updateIsDeliveredOrder,
 };

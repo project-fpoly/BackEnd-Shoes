@@ -13,7 +13,7 @@ import {
   findUserOrders,
   updateManyOrder,
   updateCart,
-  updateIsDeliveredOrder
+  updateIsDeliveredOrder,
 } from "../controllers/Cart";
 import { authenticateToken, checkCreateOder } from "../middlewares/checkOrders";
 import { checkPermissionManager } from "../middlewares/checkPermission";
@@ -37,5 +37,4 @@ routerCart.delete("/admin/bills/:id", checkPermissionManager, deleteOrder); // X
 routerCart.put("/admin/bills/:id", checkPermissionManager, updateOrder); // Cập nhật thông tin của một đơn hàng(cho quản trị viên)
 routerCart.put("/admin/bills/", checkPermissionManager, updateManyOrder); // Cập nhật thông tin của nhiều đơn hàng(cho quản trị viên)
 routerCart.get("/admin/bills/:id", checkPermissionManager, getCartByIdAdmin); // Lấy thông tin chi tiết của một đơn hàng (cho quản trị viên)
-
 export default routerCart;

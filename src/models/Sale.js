@@ -3,11 +3,11 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 const saleSchema = new mongoose.Schema(
   {
-    Name: {
+    name: {
       type: String,
       required: true,
     },
-    discout: {
+    discount: {
       type: Number,
       default: true,
     },

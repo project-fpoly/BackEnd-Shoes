@@ -8,6 +8,11 @@ import cors from "cors";
 import session from "express-session";
 import { createNotificationForAdmin } from "./controllers/notification.js";
 import User from "./models/User.js";
+import order from "./controllers/vnpay.js";
+import path from "path";
+import logger from "morgan";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 dotenv.config();
 const { PORT, DB_URI, SECRET_CODE } = process.env;
 
@@ -25,6 +30,20 @@ app.use(
     saveUninitialized: true,
   })
 );
+
+const __dirname = process.cwd();
+app.set("views", path.join(__dirname, "src/views"));
+app.set("view engine", ".jade");
+
+// uncomment after placing your favicon in /public
+//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+app.use(logger("dev"));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/order", order);
+
 mongoose.connect(DB_URI).then(() => {
   console.log("Connected!");
 });
@@ -34,11 +53,11 @@ let socket;
 // Socket.io implementation
 io.on("connection", (s) => {
   socket = s;
-  socket.on("new_user_login",async  (data) => {
+  socket.on("new_user_login", async (data) => {
     io.emit("new_user_login", { message: data.message, _id: data._id });
-     await User.findByIdAndUpdate(data._id, { isActive: true });
-     io.emit("update_user_status", { _id: data._id, isActive: true });
-     socket.userId = data._id;
+    await User.findByIdAndUpdate(data._id, { isActive: true });
+    io.emit("update_user_status", { _id: data._id, isActive: true });
+    socket.userId = data._id;
   });
   socket.on("newNotification", (data) => {
     io.emit("newNotification", { message: data.message });
