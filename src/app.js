@@ -48,6 +48,12 @@ io.on("connection", (s) => {
     await User.findByIdAndUpdate(data.userId, { isActive: false });
     io.emit("update_user_status", { _id: data._id, isActive: false });
   });
+  socket.on("check_active", async (data) => {
+    socket.userId = data._id;
+    await User.findByIdAndUpdate(data._id, { isActive: true });
+    io.emit("update_user_status", { _id: data._id, isActive: true });
+    console.log("log ok",data._id);
+  });
   socket.on("disconnect", async () => {
     await User.findByIdAndUpdate(socket.userId, { isActive: false });
     io.emit("update_user_status", { _id: socket.userId, isActive: false });
