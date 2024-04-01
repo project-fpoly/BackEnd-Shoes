@@ -46,7 +46,7 @@ const addCartItems = async (req, res) => {
       }
     }
 
-    const productModel = await Product.findById(product);
+    const productModel = await Profduct.findById(product);
 
     if (!productModel) {
       return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
@@ -166,7 +166,13 @@ const createOrder = async (req, res) => {
       totalPrice: totalPrice ? totalPrice : cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
       trackingNumber: generateTrackingNumber(),
     });
-
+    for (const item of order.cartItems) {
+      // Tìm sản phẩm trong cơ sở dữ liệu và cập nhật số lượng
+      await Product.updateOne(
+        { _id: item.product, "sizes.name": item.size },
+        { $inc: { "sizes.$.quantity": -item.quantity } }
+      );
+    }
     if (userEmail) {
       const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -194,12 +200,14 @@ const createOrder = async (req, res) => {
 
     await order.save();
     // Thêm thông báo cho admin
-    await createNotificationForAdmin(
-      `Bạn có đơn hàng ${order.trackingNumber}, được đặt bởi ${userEmail}`,
-      "order",
-      req.user._id,
-      "admin"
-    );
+    if (userId) {
+      await createNotificationForAdmin(
+        `Bạn có đơn hàng ${order.trackingNumber}, được đặt bởi ${userEmail}`,
+        "order",
+        req.user._id,
+        "admin"
+      );
+    }
 
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
     if (userId) {
@@ -331,7 +339,7 @@ const updateCart = async (req, res) => {
     if (userId) {
       cart = await Cart.findOne({ user: userId });
       cart.cartItems[index].size = size;
-      console.log((cart.cartItems[index].size = size));
+      console.log("size", (cart.cartItems[index].size = size));
       if (quantity !== undefined) {
         cart.cartItems[index].quantity = quantity;
       }
@@ -370,7 +378,10 @@ const updateCart = async (req, res) => {
     cart.cartItems = updatedCartItems;
     let totalPrice = 0;
     for (const item of cart.cartItems) {
+      console.log(item);
       const product = await Product.findById(item.product);
+      console.log("price", product.price);
+      console.log("quantity", item.quantity);
       totalPrice += item.quantity * product.price;
     }
 
