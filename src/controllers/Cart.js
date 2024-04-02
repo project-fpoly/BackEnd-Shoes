@@ -46,7 +46,7 @@ const addCartItems = async (req, res) => {
       }
     }
 
-    const productModel = await Profduct.findById(product);
+    const productModel = await Product.findById(product);
 
     if (!productModel) {
       return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
@@ -103,7 +103,8 @@ const addCartItems = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { shippingAddress, cartItems, payment_method } = req.body;
+    const { shippingAddress, cartItems, payment_method, totalPrice } = req.body;
+    console.log(totalPrice);
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
     let cart;
@@ -137,12 +138,6 @@ const createOrder = async (req, res) => {
       }
       return trackingNumber;
     };
-    // Tạo đơn hàng từ giỏ hàng và sử dụng trường totalPrice từ giỏ hàng
-    let totalPrice = 0;
-    cart.cartItems.forEach((item) => {
-      totalPrice += item.price * item.quantity;
-      console.log(item.quantity);
-    });
 
     const order = new Bill({
       user: userId,
@@ -163,7 +158,7 @@ const createOrder = async (req, res) => {
           : "Chờ lấy hàng",
       isPaid: payment_method === "Thanh toán tiền mặt" ? false : true,
       shippingAddress,
-      totalPrice: totalPrice ? totalPrice : cart.totalPrice, // Sử dụng trường totalPrice từ giỏ hàng
+      totalPrice: totalPrice,
       trackingNumber: generateTrackingNumber(),
     });
     for (const item of order.cartItems) {
