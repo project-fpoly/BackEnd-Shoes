@@ -472,10 +472,10 @@ const findUserOrders = async (req, res) => {
 };
 const getOrderById = async (req, res) => {
   try {
-    console.log(req.body);
-    const { id: cartId } = req.params;
-
-    const order = await Bill.findOne({ _id: cartId });
+    const { id } = req.params;
+    console.log(req.params);
+    const order = await Bill.findOne({ trackingNumber: id }).exec();
+    console.log(order);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -485,6 +485,7 @@ const getOrderById = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 const getAllOrderAdmin = async (req, res) => {
   try {
     const { page = 1, limit = 10, start, end, search } = req.query;
