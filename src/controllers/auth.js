@@ -95,7 +95,16 @@ export const createUser = async (req, res) => {
         message: "Số điện thoại đã tồn tại.",
       });
     }
-    let avatarUrl = { url: req.file.path, publicId: req.file.filename };
+// Lặp qua mảng files và gán giá trị cho biến avatarUrl
+let avatarUrls = [];
+
+req.files.forEach(file => {
+    let avatarUrl = { url: file.path, publicId: file.filename };
+    avatarUrls.push(avatarUrl);
+});
+
+console.log(avatarUrls);
+
     // Tiếp tục xử lý logic tạo user, sử dụng avatarUrl nếu ảnh đã được gửi lên thành công
     // Hash the password
     const hashPassword = await bcryptjs.hash(req.body.password, 10);
@@ -109,13 +118,13 @@ export const createUser = async (req, res) => {
       deliveryAddress: req.body.deliveryAddress,
       gender: req.body.gender,
       dateOfBirth: req.body.dateOfBirth,
-      avt: avatarUrl, // Use the Cloudinary URL for the avatar
+      avt: avatarUrls, // Use the Cloudinary URL for the avatar
       phoneNumbers: req.body.phoneNumbers,
       emailVerified: true,
     });
 
     // Save the new user to the database
-    await newUser.save();
+    // await newUser.save();
 
     const savedUser = await User.findOne({ _id: newUser._id }).select(
       projection
@@ -123,7 +132,7 @@ export const createUser = async (req, res) => {
 
     res.status(200).json({
       message: "Tạo User thành công",
-      newUser: savedUser,
+      newUser: newUser,
     });
   } catch (error) {
     console.error(error);

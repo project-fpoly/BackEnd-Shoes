@@ -30,7 +30,7 @@ const storage = new CloudinaryStorage({
   },
 });
 const upload = multer({ storage: storage });
-routerAuth.post("/create", upload.single("avt"),checkPermissionManager, createUser);
+routerAuth.post("/create", upload.array("avt",5),checkPermissionManager, createUser);
 routerAuth.post("/signup", signUp);
 routerAuth.post("/signin", signIn);
 
