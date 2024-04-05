@@ -1,11 +1,35 @@
 import Notification from "../models/Notification.js";
 import { validationResult } from "express-validator";
 import io from "socket.io-client";
+import User from "../models/User.js";
 // Lấy tất cả thông báo
 export const getAllNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find().sort({ createdAt: -1 });
     res.status(200).json(notifications);
+  } catch (error) {
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi lấy thông báo",
+      error: error.message,
+    });
+  }
+};
+export const getSendMemberNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.find({ recipientType: "member" }).sort({ createdAt: -1 });
+    const notificationsWithUser = await Promise.all(
+      notifications.map(async (notification) => {
+        const user = await User.findById(notification.userId);
+        const userName = user ? user.userName : "N/A";
+        const email = user ? user.email : "N/A";
+        return {
+          ...notification.toObject(),
+          userId:{_id:notification.userId,userName,email}
+        };
+      })
+    );
+
+    res.status(200).json(notificationsWithUser);
   } catch (error) {
     res.status(500).json({
       message: "Đã xảy ra lỗi khi lấy thông báo",
