@@ -202,6 +202,13 @@ const createOrder = async (req, res) => {
         req.user._id,
         "admin"
       );
+    } else {
+      await createNotificationForAdmin(
+        `Bạn có đơn hàng ${order.trackingNumber}, được đặt bởi Khách`,
+        "order",
+        "660684abfe2c726b51e28e4c",
+        "admin"
+      );
     }
 
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
@@ -591,6 +598,16 @@ const updateManyOrder = async (req, res) => {
       return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
     }
     const data = { ids, isPaid, isDelivered };
+    console.log("don", idList);
+    const billWithIdUser = [];
+
+    for (const orders of idList) {
+      if (orders.user) {
+        billWithIdUser.push(orders.user);
+      }
+    }
+
+    console.log(billWithIdUser);
     // Trả về số lượng đơn hàng đã được cập nhật
     res.json({
       message: `Cập nhật ${result.modifiedCount} đơn hàng thành công`,

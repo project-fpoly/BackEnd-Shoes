@@ -66,6 +66,8 @@ io.on("connection", (s) => {
   socket.on("log_out", async (data) => {
     await User.findByIdAndUpdate(data.userId, { isActive: false });
     io.emit("update_user_status", { _id: data._id, isActive: false });
+    console.log("hi2",data)
+
   });
   socket.on("check_active", async (data) => {
     socket.userId = data._id;
@@ -76,6 +78,7 @@ io.on("connection", (s) => {
   socket.on("disconnect", async () => {
     await User.findByIdAndUpdate(socket.userId, { isActive: false });
     io.emit("update_user_status", { _id: socket.userId, isActive: false });
+    console.log("hi1",socket.userId);
   });
 });
 
