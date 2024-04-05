@@ -421,8 +421,8 @@ const getDetailProduct = async (req, res) => {
       if (saleInfo) {
         const saleObject = {
           _id: saleInfo._id,
-          name: saleInfo.Name,
-          discount: saleInfo.discout
+          name: saleInfo.name,
+          discount: saleInfo.discount
         };
         product.sale = saleObject;
       } else {
