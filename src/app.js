@@ -63,6 +63,10 @@ io.on("connection", (s) => {
     io.emit("newNotification", { message: data.message });
     console.log("thong bao ne");
   });
+  socket.on("realtimeBill", (data) => {
+    io.emit("realtimeBill", { data: data });
+    console.log("thong bao ne");
+  });
   socket.on("log_out", async (data) => {
     await User.findByIdAndUpdate(data.userId, { isActive: false });
     io.emit("update_user_status", { _id: data._id, isActive: false });

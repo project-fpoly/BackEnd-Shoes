@@ -6,6 +6,7 @@ import Product from "../models/Product.js";
 import Bill from "../models/Bill.js";
 import User from "../models/User.js";
 import { createNotificationForAdmin } from "./notification.js";
+import io from "socket.io-client";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
@@ -599,6 +600,7 @@ const updateManyOrder = async (req, res) => {
     }
     const data = { ids, isPaid, isDelivered };
     console.log("don", idList);
+
     const billWithIdUser = [];
 
     for (const orders of idList) {
@@ -606,7 +608,10 @@ const updateManyOrder = async (req, res) => {
         billWithIdUser.push(orders.user);
       }
     }
-
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("realtimeBill", {
+      data: billWithIdUser,
+    });
     console.log(billWithIdUser);
     // Trả về số lượng đơn hàng đã được cập nhật
     res.json({
