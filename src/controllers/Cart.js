@@ -431,6 +431,10 @@ const updateIsDeliveredOrder = async (req, res) => {
         "admin"
       );
     }
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("realtimeBillforAdmin", {
+      data: "thanh cong",
+    });
     res.json({ message: "Update order complete", updatedCart });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -578,7 +582,10 @@ const updateOrder = async (req, res) => {
     if (!updatedCart) {
       return res.status(404).json({ error: "Order not found" });
     }
-
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("realtimeBill", {
+      data: "thanh cong",
+    });
     res.json({ message: "Update order complete", updatedCart });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -610,7 +617,7 @@ const updateManyOrder = async (req, res) => {
     }
     const socket = io("http://localhost:9000", { transports: ["websocket"] });
     socket.emit("realtimeBill", {
-      data: billWithIdUser,
+      data: "thanh cong",
     });
     console.log(billWithIdUser);
     // Trả về số lượng đơn hàng đã được cập nhật

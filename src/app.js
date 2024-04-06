@@ -65,7 +65,9 @@ io.on("connection", (s) => {
   });
   socket.on("realtimeBill", (data) => {
     io.emit("realtimeBill", { data: data });
-    console.log("thong bao ne");
+  });
+  socket.on("realtimeBillforAdmin", (data) => {
+    io.emit("realtimeBillforAdmin", { data: data });
   });
   socket.on("log_out", async (data) => {
     await User.findByIdAndUpdate(data.userId, { isActive: false });
