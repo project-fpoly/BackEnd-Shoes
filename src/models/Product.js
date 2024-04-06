@@ -63,16 +63,6 @@ const ProductSchema = new Schema({
     type: Number,
     required: false,
   },
-  quantity: {
-    type: Number,
-    required: true,
-    validate: {
-      validator: function (value) {
-        return value >= 0;
-      },
-      message: "Số lượng phải lớn hơn hoặc bằng 0",
-    },
-  },
   sold_count: {
     type: Number,
     required: false,
@@ -147,7 +137,12 @@ const ProductSchema = new Schema({
     default: false,
   },
 });
+ProductSchema.virtual('quantity').get(function() {
+  return this.sizes.reduce((total, size) => total + size.quantity, 0);
+});
 
+ProductSchema.set('toJSON', { virtuals: true });
+ProductSchema.set('toObject', { virtuals: true });
 ProductSchema.plugin(timestampPlugin);
 ProductSchema.index({ product_id: 1, name: "text" });
 ProductSchema.index({ categoryId: 1 });

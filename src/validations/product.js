@@ -9,9 +9,8 @@ const productValidator = Joi.object({
   price: Joi.number().min(0).required(),
   sale: Joi.string().allow(null).optional().required(),
   discount: Joi.number(),
-  quantity: Joi.number().min(0).required(),
   sold_count: Joi.number().default(0),
-  rating: Joi.number().required(),
+  rating: Joi.number(),
   sizes: Joi.array().items(
     Joi.object({
       name: Joi.string().required(),
@@ -22,9 +21,9 @@ const productValidator = Joi.object({
   material: Joi.string().required(),
   release_date: Joi.date(),
   images: Joi.array().items(Joi.string()),
-  video: Joi.string().required(),
+  video: Joi.string(),
   blog: Joi.string().allow(null).optional(),
-  warranty: Joi.string().required(),
+  warranty: Joi.string(),
   tech_specs: Joi.string().required(),
   stock_status: Joi.string().required(),
   gender: Joi.string().required(),
