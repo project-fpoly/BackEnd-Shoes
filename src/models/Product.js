@@ -143,6 +143,30 @@ ProductSchema.virtual('quantity').get(function() {
 
 ProductSchema.set('toJSON', { virtuals: true });
 ProductSchema.set('toObject', { virtuals: true });
+
+ProductSchema.pre('save', function (next) {
+  const sizesMap = new Map();
+  this.sizes.forEach(size => {
+      const name = size.name;
+      const quantity = size.quantity;
+      if (sizesMap.has(name)) {
+          sizesMap.set(name, sizesMap.get(name) + quantity);
+      } else {
+          sizesMap.set(name, quantity);
+      }
+  });
+
+  const newSizes = [];
+  sizesMap.forEach((quantity, name) => {
+      newSizes.push({ name, quantity });
+  });
+  newSizes.sort((a, b) => parseInt(a.name) - parseInt(b.name));
+  this.sizes = newSizes;
+
+  next();
+});
+
+
 ProductSchema.plugin(timestampPlugin);
 ProductSchema.index({ product_id: 1, name: "text" });
 ProductSchema.index({ categoryId: 1 });
