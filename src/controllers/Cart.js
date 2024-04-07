@@ -480,14 +480,28 @@ const findUserOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(req.params);
-    const order = await Bill.findOne({ trackingNumber: id }).exec();
-    console.log(order);
-    if (!order) {
+    const { search } = req.query;
+    let query = {};
+
+    // Chỉ tạo query nếu biến search không rỗng
+    if (search && search.trim() !== "") {
+      // Kiểm tra xem search có rỗng hay không
+      query.$or = [{ trackingNumber: { $regex: search, $options: "i" } }];
+    }
+
+    let data = {};
+    // Kiểm tra nếu có truy vấn, thực hiện tìm kiếm và gán kết quả vào biến data
+    if (Object.keys(query).length !== 0) {
+      const order = await Bill.find({ ...query });
+      data = order;
+    }
+
+    // Nếu không có kết quả tìm kiếm và biến search rỗng, trả về lỗi 404
+    if (!data.length && (!search || search.trim() === "")) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    res.json(order);
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
