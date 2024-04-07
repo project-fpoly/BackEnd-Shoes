@@ -404,10 +404,10 @@ export const analyticController = {
         delete: true,
       });
       const countProductDeleted = await Product.countDocuments({
-        is_deleted: true,
+        delete: true,
       });
       const countProductNotDeleted = await Product.countDocuments({
-        deleted: true,
+        delete: true,
       });
 
       /* đếm số lượng voucher hiện có */
@@ -423,6 +423,7 @@ export const analyticController = {
         isDelete: false,
         expiration_date: { $gte: new Date() }, // Chỉ lấy các voucher chưa hết hạn
       });
+
       const countVoucherNotExpiration = await Voucher.countDocuments({
         isDelete: false,
         expiration_date: { $lt: new Date() }, // Chỉ lấy các voucher đã hết hạn
@@ -432,10 +433,10 @@ export const analyticController = {
       const countCategorys =
         await Category.countDocuments(); /* lấy hết category đang có */
       const countCategoryActive = await Category.countDocuments({
-        status: active,
+        status: "active",
       });
       const countCategoryInActive = await Category.countDocuments({
-        status: inactive,
+        status: "inactive",
       });
 
       /* get total day */
@@ -468,7 +469,7 @@ export const analyticController = {
         createdAt: {
           $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
         },
-      }).select("tototalPricetal");
+      }).select("totalPrice");
       const totalMoneyDay = totalMoneyDays.reduce(
         (a, b) => a + b.totalPrice,
         0
@@ -485,19 +486,19 @@ export const analyticController = {
       /* số lượng order 1 ngayf */
       const countOrders =
         await Bill.countDocuments(); /* lấy hết order đang có */
-      const countOrderActive = await Bill.countDocuments({ isActive: true });
-      const countOrderInActive = await Bill.countDocuments({
-        isActive: false,
-      });
-      const countOrderExpiration = await Bill.countDocuments({
-        isActive: true,
-        endDate: { $gte: new Date() }, // Chỉ lấy các order chưa hết hạn
-      });
-      const countOrderNotExpiration = await Bill.countDocuments({
-        isActive: true,
-        endDate: { $lt: new Date() }, // Chỉ lấy các order đã hết hạn
-      });
-      /* order có trạng thái là pending */
+      // const countOrderActive = await Bill.countDocuments({ isActive: true });
+      // const countOrderInActive = await Bill.countDocuments({
+      //   isActive: false,
+      // });
+      // const countOrderExpiration = await Bill.countDocuments({
+      //   isActive: true,
+      //   endDate: { $gte: new Date() }, // Chỉ lấy các order chưa hết hạn
+      // });
+      // const countOrderNotExpiration = await Bill.countDocuments({
+      //   isActive: true,
+      //   endDate: { $lt: new Date() }, // Chỉ lấy các order đã hết hạn
+      // });
+      /* order có trạng thái là Chờ xác nhận */
       const countOrderPending = await Bill.countDocuments({
         isDelivered: "Chờ xác nhận",
       });
@@ -518,7 +519,7 @@ export const analyticController = {
         isDelivered: "Đang giao hàng",
       });
       /* số tiến có trạng thái là delivered */
-      const countOrderDeliveredMoneys = await Bill.countDocuments({
+      const countOrderDeliveredMoneys = await Bill.find({
         isDelivered: "Đang giao hàng",
       });
       /* số tiến có trạng thái là done */
@@ -554,10 +555,10 @@ export const analyticController = {
         ],
         countOrderDay: [
           { name: "total", value: countOrders },
-          { name: "active", value: countOrderActive },
-          { name: "inActive", value: countOrderInActive },
-          { name: "expiration", value: countOrderExpiration },
-          { name: "notExpiration", value: countOrderNotExpiration },
+          // { name: "active", value: countOrderActive },
+          // { name: "inActive", value: countOrderInActive },
+          // { name: "expiration", value: countOrderExpiration },
+          // { name: "notExpiration", value: countOrderNotExpiration },
         ],
         countOrderStatus: [
           { name: "pending", value: countOrderPending },
@@ -599,11 +600,15 @@ export const analyticController = {
             ),
           },
           {
-            name: "done",
+            name: "delivered",
             value: countOrderDeliveredMoneys.reduce(
               (a, b) => a + b.totalPrice,
               0
             ),
+          },
+          {
+            name: "done",
+            value: countOrderDoneMoneys.reduce((a, b) => a + b.totalPrice, 0),
           },
           {
             name: "canceled",
@@ -742,7 +747,12 @@ export const analyticController = {
           { $eq: [{ $month: "$createdAt" }, currentMonth] },
         ],
       },
-    }).populate("cartItems.product");
+    }).populate({
+      path: "cartItems",
+      populate: {
+        path: "product",
+      },
+    });
     // return res.json(result);
     const vvv = await Bill.aggregate([
       {
@@ -770,7 +780,10 @@ export const analyticController = {
         };
     }
     var all_dth = 0;
-    const all_dt = await Bill.find({});
+    const all_dt = await Bill.find({})
+      .populate("cartItems.product", "user")
+      .sort({ createdAt: -1 });
+    // return res.json(all_dt);
     for (const v of all_dt)
       if (v.isDelivered != "Đã hủy") all_dth += v.totalPrice;
     var sold_product = {};
@@ -779,23 +792,26 @@ export const analyticController = {
     for (const v of result) {
       if (v.isDelivered != "Đã hủy") doanh_thu += v.totalPrice; //doanh thu
       for (const c of v.cartItems) {
-        console.log(c, ":::cartItem");
-        if (!sold_product[c.product]) {
-          sold_product[c.product] = {
+        // console.log(c, ":::cartItem");
+        if (!sold_product[c?.product?.name]) {
+          sold_product[c?.product?.name] = {
             count: 1,
             _id: c._id,
             images: [c.images],
             price: c.price,
           };
         } else {
-          sold_product[c.product].count++;
-          sold_product[c.product]._id = c._id;
+          // if (!sold_product[c?.product?.name].images.includes(c.images)) {
+          //   sold_product[c?.product?.name].images.push(c.image);
+          // }
+          sold_product[c?.product?.name].count++;
+          sold_product[c?.product?.name]._id = c._id;
         }
-        if (m_product.count < sold_product[c.product].count) {
-          m_product.count = sold_product[c.product].count;
-          m_product.product = c.product;
+        if (m_product.count < sold_product[c?.product?.name].count) {
+          m_product.count = sold_product[c?.product?.name].count;
+          m_product.product = c?.product?.name;
           m_product._id = c._id;
-          m_product.images = sold_product[c.product].images;
+          m_product.images = sold_product[c?.product?.name].images;
         }
       }
     }
@@ -877,7 +893,7 @@ export const analyticController = {
           "tháng này": doanh_thu,
           "tổng doanh thu": all_dth,
           "số đơn": list_doanhthu,
-          "doanh thu khách vãn lai ": dt_ssUser2_Order,
+          "doanh thu khách vãng lai ": dt_ssUser2_Order,
         },
 
         "số user tham gia": {
