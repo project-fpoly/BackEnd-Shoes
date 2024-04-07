@@ -11,6 +11,7 @@ import {
   fetchSize,
   fetchTechSpec,
   upload,
+  updateField,
 } from "../controllers/product.js";
 import express from "express";
 import { checkPermission } from "../middlewares/checkPermission.js";
@@ -24,8 +25,9 @@ routerProduct.get("/color", fetchColor);
 routerProduct.get("/size", fetchSize);
 routerProduct.get("/tech_spec", fetchTechSpec);
 routerProduct.put("/:id", updateProduct);
-routerProduct.patch("/:id", tryDeleteProduct);
-routerProduct.patch("/:id", RestoreProduct);
+routerProduct.patch("/:id/field",updateField)
+routerProduct.patch("/:id/delete", tryDeleteProduct);
+routerProduct.patch("/:id/restore", RestoreProduct);
 routerProduct.delete("/:id", checkPermission, deleteProduct);
 routerProduct.get("/:id", getDetailProduct);
 

@@ -337,7 +337,7 @@ const buildResult = (populatedProducts, total, page, totalPages, pageSize) => {
 
 export const fetchMaterial = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name").populate("sale", "name discount description expiration_date");
+    const products = await Product.find()
     const materials = products.map((product) => product.material);
     return res.status(200).json({
       message: "Lấy được danh sách chất liệu của sản phẩm thành công",
@@ -352,7 +352,7 @@ export const fetchMaterial = async (req, res) => {
 };
 export const fetchColor = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name").populate("sale", "name discount description expiration_date");
+    const products = await Product.find()
     const colors = products.map((product) => product.color);
     return res.status(200).json({
       message: "Lấy được danh sách chất liệu của sản phẩm thành công",
@@ -367,7 +367,7 @@ export const fetchColor = async (req, res) => {
 };
 export const fetchTechSpec = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name ").populate("sale", "name discount description expiration_date");
+    const products = await Product.find()
     const tech_specs = products.map((product) => product.tech_specs);
     return res.status(200).json({
       message: "Lấy được danh sách tech_specs của sản phẩm thành công",
@@ -383,7 +383,7 @@ export const fetchTechSpec = async (req, res) => {
 
 export const fetchSize = async (req, res) => {
   try {
-    const products = await Product.find().populate("categoryId", "name ").populate("sale", "name discount description expiration_date");
+    const products = await Product.find()
     const allSizes = [];
     products.forEach(product => {
       product.sizes.forEach(size => {
@@ -451,6 +451,59 @@ const getDetailProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
+    const productId = req.params.id;
+    const updateData = req.body;
+
+    const product = await Product.findById(productId);
+
+    if (!productId) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm"
+      });
+    }
+
+    //Kiểm tra có trùng size hay ko
+
+    const sizesMap = new Map();
+    updateData.sizes.forEach(size => {
+      const name = size.name;
+      const quantity = size.quantity;
+      if (sizesMap.has(name)) {
+        sizesMap.set(name, sizesMap.get(name) + quantity);
+      } else {
+        sizesMap.set(name, quantity);
+      }
+    });
+
+    const newSizes = [];
+    sizesMap.forEach((quantity, name) => {
+      newSizes.push({ name, quantity });
+    });
+    newSizes.sort((a, b) => parseInt(a.name) - parseInt(b.name));
+    updateData.sizes = newSizes;
+    // Cập nhật thông tin sản phẩm
+    await Product.findByIdAndUpdate(productId, { $set: req.body });
+
+    await Category.updateMany({ products: productId }, { $pull: { products: productId } });
+    await Category.findByIdAndUpdate(req.body.categoryId, { $addToSet: { products: productId } });
+    await Sale.updateMany({ product: productId }, { $pull: { product: productId } });
+    await Sale.findByIdAndUpdate(req.body.sale, { $addToSet: { product: productId } });
+
+    return res.status(200).json({
+      message: "Cập nhật sản phẩm thành công!",
+      data: product
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Lỗi hệ thống",
+      error: error.message
+    });
+  }
+};
+
+const updateField = async (req, res) => {
+  try {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -459,15 +512,27 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // Cập nhật thông tin sản phẩm
-    await Product.findByIdAndUpdate(req.params.id, { $set: req.body });
+    const { fieldName, value } = req.body;
 
-    await Category.updateMany({ products: req.params.id }, { $pull: { products: req.params.id } });
-    await Sale.updateMany({ product: req.params.id }, { $pull: { product: req.params.id } });
+    // Kiểm tra fieldName hợp lệ
+    if (!product[fieldName]) {
+      return res.status(400).json({
+        message: "Trường dữ liệu không hợp lệ"
+      });
+    }
+
+    // Validate giá trị value nếu cần thiết
+    // ...
+
+    // Cập nhật trường dữ liệu cụ thể trong sản phẩm
+    product[fieldName] = value;
+
+    // Lưu lại sản phẩm đã cập nhật
+    const updatedProduct = await product.save();
 
     return res.status(200).json({
-      message: "Cập nhật sản phẩm thành công!",
-      data: product
+      message: "Cập nhật trường sản phẩm thành công!",
+      data: updatedProduct
     });
 
   } catch (error) {
@@ -525,7 +590,7 @@ const RestoreProduct = async (req, res) => {
     await product.save();
 
     return res.status(200).json({
-      message: "Đã xóa tạm thời!",
+      message: "Đã khôi phục sản phẩm!",
       data: product
     });
 
@@ -579,5 +644,6 @@ export {
   tryDeleteProduct,
   RestoreProduct,
   deleteProduct,
+  updateField,
   upload,
 };
