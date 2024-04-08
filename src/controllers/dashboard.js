@@ -162,7 +162,16 @@ export const getDataChart = async (req, res) => {
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-      const sortedData = Object.entries(dailyTotal)
+      let aggregatedTotal = {};
+      if (type === 'day' || !type) {
+        aggregatedTotal = dailyTotal;
+      } else if (type === 'month') {
+        aggregatedTotal = aggregateByMonth(dailyTotal, startTime, endTime);
+      } else if (type === 'year') {
+        aggregatedTotal = aggregateByYear(dailyTotal);
+      }
+
+      const sortedData = Object.entries(aggregatedTotal)
         .map(([time, value]) => ({ time, value }))
         .sort((a, b) => new Date(a.time) - new Date(b.time));
 
