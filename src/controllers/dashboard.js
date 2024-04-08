@@ -1,59 +1,32 @@
 import Bill from "../models/Bill";
 import ListModel from "../models/dashboard";
 import { DashboardValidator } from "../validations/dashboard";
-// const List=[
-//     {
-//       "id": "akajdk092jk09",
-//       "name": "doanh số",
-//       "type": "bar",
-//       "dataId": "abc123"
-//     },
-//     {
-//       "id": "dsads81823hjks",
-//       "name": "đơn hàng",
-//       "type": "bar",
-//       "dataId": "xyz456"
-//     }
-//   ]
-const data = {
-  data: [
-    {
-      config: {
-        id: "abc123",
-        name: "doanh số bán hàng",
-        dataKey: ["Doanh số", "Lợi nhuận"],
-      },
-      data: [
-        {
-          name: "doanh số",
-          values: [
-            {
-              time: "2024-03-26",
-              value: 100000,
-            },
-            {
-              time: "2024-03-27",
-              value: 150000,
-            },
-          ],
-        },
-        {
-          name: "Lợi nhuận",
-          values: [
-            {
-              time: "2024-03-26",
-              value: 130000,
-            },
-            {
-              time: "2024-03-27",
-              value: 170000,
-            },
-          ],
-        },
-      ],
-    },
-  ],
-};
+// Hàm tính tổng theo tháng
+function aggregateByMonth(dailyTotal) {
+  const aggregatedTotal = {};
+  for (const [date, value] of Object.entries(dailyTotal)) {
+    const month = date.split('-').slice(0, 2).join('-');
+    if (!aggregatedTotal[month]) {
+      aggregatedTotal[month] = 0;
+    }
+    aggregatedTotal[month] += value;
+  }
+  return aggregatedTotal;
+}
+
+// Hàm tính tổng theo năm
+function aggregateByYear(dailyTotal) {
+  const aggregatedTotal = {};
+  for (const [date, value] of Object.entries(dailyTotal)) {
+    const year = date.split('-')[0];
+    if (!aggregatedTotal[year]) {
+      aggregatedTotal[year] = 0;
+    }
+    aggregatedTotal[year] += value;
+  }
+  return aggregatedTotal;
+}
+
 
 export const getList = async (req, res) => {
   try {
@@ -94,7 +67,7 @@ export const postList = async (req, res) => {
 
 export const getDataChart = async (req, res) => {
   try {
-    const { startTime, endTime } = req.query;
+    const { startTime, endTime, type } = req.query; // Thêm type vào đây
     const { id } = req.params;
     const list = await ListModel.findById(id);
     if (!list) {
@@ -120,7 +93,6 @@ export const getDataChart = async (req, res) => {
         }
         dailyTotal[date] += bill.totalPrice;
       });
-
       const startDate = new Date(startTime);
       const endDate = new Date(endTime);
       let currentDate = new Date(startDate);
@@ -131,7 +103,18 @@ export const getDataChart = async (req, res) => {
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
-      const sortedData = Object.entries(dailyTotal)
+
+      // Tính tổng theo loại (ngày, tháng, năm)
+      let aggregatedTotal = {};
+      if (type === 'day' || !type) {
+        aggregatedTotal = dailyTotal;
+      } else if (type === 'month') {
+        aggregatedTotal = aggregateByMonth(dailyTotal, startTime, endTime);
+      } else if (type === 'year') {
+        aggregatedTotal = aggregateByYear(dailyTotal);
+      }
+
+      const sortedData = Object.entries(aggregatedTotal)
         .map(([time, value]) => ({ time, value }))
         .sort((a, b) => new Date(a.time) - new Date(b.time));
 
