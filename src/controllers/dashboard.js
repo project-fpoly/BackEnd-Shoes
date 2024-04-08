@@ -107,7 +107,7 @@ const data={
         };
 
         const bills = await Bill.find({
-            updatedAt: { $gte: new Date(startTime), $lte: new Date(endTime) },
+            updatedAt: { $gte: new Date(startTime), $lt: new Date(endTime + "T23:59:59.999Z") },
             isDelivered: "Đã giao hàng",
         });
         const dailyTotal = {};
@@ -117,6 +117,49 @@ const data={
                 dailyTotal[date] = 0;
             }
             dailyTotal[date] += bill.totalPrice;
+        });
+
+        const startDate = new Date(startTime);
+        const endDate = new Date(endTime);
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const currentDateISO = currentDate.toISOString().split('T')[0];
+            if (!dailyTotal[currentDateISO]) {
+                dailyTotal[currentDateISO] = 0;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        const sortedData = Object.entries(dailyTotal)
+            .map(([time, value]) => ({ time, value }))
+            .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        const data = {
+            data: sortedData,
+        };
+
+        return res.status(200).json({
+            data: [{
+                config: config,
+                data: data
+            }]
+        });
+    } else if (list.name === "Đơn hàng") {
+        const config = {
+            name: list.name,
+            type: list.type,
+        };
+
+        const bills = await Bill.find({
+            createdAt: { $gte: new Date(startTime), $lt: new Date(endTime + "T23:59:59.999Z") }
+        });              
+        console.log(bills);
+        const dailyTotal = {};
+        bills.forEach(bill => {
+            const date = new Date(bill.createdAt).toISOString().split('T')[0];
+            if (!dailyTotal[date]) {
+                dailyTotal[date] = 0;
+            }
+            dailyTotal[date]++;
         });
 
         const startDate = new Date(startTime);
