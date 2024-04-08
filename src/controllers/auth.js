@@ -272,6 +272,7 @@ export const getAllUsers = async (req, res) => {
     const pageSize = parseInt(req.query.pageSize) || 10;
     const searchKeyword = req.query.search || "";
     const roleFilter = req.query.role || "";
+    const isDeletedFilter = req.query.isDelete || false;
 
     const options = {
       page,
@@ -293,13 +294,14 @@ export const getAllUsers = async (req, res) => {
     if (roleFilter) {
       searchCondition.role = roleFilter;
     }
+    if (isDeletedFilter !== "false") {
+      searchCondition.isDelete = isDeletedFilter === "true";
+    }
     const users = await User.paginate(searchCondition, {
       ...options,
       sort: { isActive: -1 },
     });
-    
     return res.status(200).json(users);
-    
   } catch (error) {
     return res.status(500).json({
       name: error.name,
