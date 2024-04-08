@@ -99,7 +99,8 @@ const data={
         const list = await ListModel.findById(id);
         if (!list) {
             return res.status(404).json({ message: 'Không tìm thấy danh sách' });
-        }
+        }else if(list.name==="Doanh số"){
+
         const config = {
             name: list.name,
             type: list.type,
@@ -109,9 +110,7 @@ const data={
             updatedAt: { $gte: new Date(startTime), $lte: new Date(endTime) },
             isDelivered: "Đã giao hàng",
         });
-
         const dailyTotal = {};
-
         bills.forEach(bill => {
             const date = new Date(bill.updatedAt).toISOString().split('T')[0];
             if (!dailyTotal[date]) {
@@ -130,7 +129,6 @@ const data={
             }
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
         const sortedData = Object.entries(dailyTotal)
             .map(([time, value]) => ({ time, value }))
             .sort((a, b) => new Date(a.time) - new Date(b.time));
@@ -145,6 +143,11 @@ const data={
                 data: data
             }]
         });
+    } else{
+        res.status(500).json({
+            message: "Chưa có dạng này",
+        })
+    }
     } catch (error) {
         console.error(error);
         res.status(500).json({
