@@ -1,5 +1,7 @@
 import Bill from "../models/Bill";
 import ListModel from "../models/dashboard";
+import User from "../models/User.js";
+import Product from "../models/Product.js";
 import { DashboardValidator } from "../validations/dashboard";
 // Hàm tính tổng theo tháng
 function aggregateByMonth(dailyTotal) {
@@ -194,6 +196,9 @@ export const getDataChart = async (req, res) => {
         };
     
         const Bills= await Bill.find()
+        const billCountGuest = await Bill.countDocuments({ user: { $exists: false } });
+        const user=await User.find()
+        const product=await Product.find()
         const totalByStatus = await Bill.aggregate([
             {
                 $group: {
@@ -221,7 +226,10 @@ export const getDataChart = async (req, res) => {
                 acc[curr._id] = curr.total;
                 return acc;
             }, {}),
-            totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].total : 0
+            totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].total : 0,
+            totalUser:user.length,
+            totalGuest:billCountGuest,
+            totalProduct:product.length
         };
     
         return res.status(200).json({
