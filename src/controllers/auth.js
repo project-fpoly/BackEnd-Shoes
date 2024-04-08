@@ -272,7 +272,7 @@ export const getAllUsers = async (req, res) => {
     const pageSize = parseInt(req.query.pageSize) || 10;
     const searchKeyword = req.query.search || "";
     const roleFilter = req.query.role || "";
-    const isDeletedFilter = req.query.isDelete || false;
+    const isDeletedFilter = req.query.isDelete;
 
     const options = {
       page,
@@ -285,22 +285,27 @@ export const getAllUsers = async (req, res) => {
         resetTokenExpiry: 0,
       },
     };
+
     const searchCondition = {
       $or: [
         { userName: { $regex: searchKeyword, $options: "i" } },
         { email: { $regex: searchKeyword, $options: "i" } },
       ],
     };
+
     if (roleFilter) {
       searchCondition.role = roleFilter;
     }
-    if (isDeletedFilter !== "false") {
-      searchCondition.isDelete = isDeletedFilter === "true";
+
+    if (isDeletedFilter) {
+      searchCondition.isDelete = isDeletedFilter
     }
+
     const users = await User.paginate(searchCondition, {
       ...options,
       sort: { isActive: -1 },
     });
+
     return res.status(200).json(users);
   } catch (error) {
     return res.status(500).json({
@@ -309,6 +314,7 @@ export const getAllUsers = async (req, res) => {
     });
   }
 };
+
 
 export const getOneUser = async (req, res) => {
   try {
@@ -503,27 +509,28 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// export const deleteUser = async (req, res) => {
-//   try {
-//     const { _id } = req.user;
-//     const deletedUser = await User.findByIdAndDelete(_id);
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await User.findByIdAndUpdate(id, { isDelete: true });
 
-//     if (!deletedUser) {
-//       return res.status(404).json({
-//         message: "Không tìm thấy người dùng.",
-//       });
-//     }
+    if (!deletedUser) {
+      return res.status(404).json({
+        message: "Không tìm thấy người dùng.",
+      });
+    }
 
-//     return res.status(200).json({
-//       message: "Xoá người dùng thành công.",
-//     });
-//   } catch (error) {
-//         return res.status(500).json({
-//       name: error.name,
-//       message: error.message,
-//     });
-//   }
-// };
+    return res.status(200).json({
+      message: "Đánh dấu người dùng đã bị xóa.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+
 
 export const deleteMoreUsers = async (req, res) => {
   try {

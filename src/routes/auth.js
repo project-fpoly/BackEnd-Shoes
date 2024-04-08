@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createUser,
   deleteMoreUsers,
+  deleteUser,
   forgotPassword,
   getAllUsers,
   getOneUser,
@@ -38,6 +39,9 @@ routerAuth.post("/signin", signIn);
 routerAuth.get("/users",checkPermissionManager, getAllUsers);
 
 routerAuth.put("/users/:userId",checkPermissionMember, upload.single("avt"), updateUser);
+
+//xóa băng cách cập nhật isDelete=true
+routerAuth.delete("/user/:id",checkPermission, deleteUser);
 
 //chỉ admin mới có quyền xoá hàng loạt
 routerAuth.delete("/more-users",checkPermission, deleteMoreUsers);
