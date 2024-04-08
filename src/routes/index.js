@@ -9,6 +9,8 @@ import routerNotification from "./notification";
 import routerFavourite from "./fav";
 import routerVoucher from "./voucher";
 import routerSale from "./sale";
+import routerAnalytic from "./analytic";
+import routerDashboard from "./dashboard";
 
 const router = express.Router();
 router.use("/auth", routerAuth);
@@ -23,5 +25,7 @@ router.use("/notification", routerNotification);
 router.use("/fav", routerFavourite);
 router.use("/voucher", routerVoucher);
 router.use("/sale", routerSale);
+router.use("/analytics", routerAnalytic)
+router.use("/dashboard", routerDashboard)
 
 export default router;
