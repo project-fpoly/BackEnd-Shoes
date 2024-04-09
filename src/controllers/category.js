@@ -3,6 +3,7 @@ import { categorySchema } from "../validations/category.js";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { createNotificationForAdmin } from "./notification.js";
+import { v2 as cloudinary } from 'cloudinary';
 dotenv.config();
 
 const { SECRET_CODE } = process.env;
@@ -78,20 +79,37 @@ export const getOneCategory = async (req, res) => {
 export const createCategory = async (req, res) => {
     try {
         const body = req.body;
-        const { error } = categorySchema.validate(body);
+        const { error } = categorySchema.validate(req.body, { abortEarly: false });
+        let imageCategoryUrl = { url: req.file.path, publicId: req.file.filename };
         if (error) {
             return res.status(400).json({
                 message: error.details[0].message,
             });
         }
-        const data = await Category.create(body);
+        // Kiểm tra xem tên đã tồn tại chưa
+        const existingName = await Category.findOne({ name: body.name });
+        if (existingName) {
+            return res.status(400).json({
+                message: "Danh mục đã tồn tại.",
+            });
+        }
+
+        const newCategory = {
+            name: body.name,
+            description: body.description,
+            imageUrl: imageCategoryUrl,
+            status: body.status,
+            viewCount: body.viewCount
+        }
+        const category = new Category(newCategory); 
+        const data = await category.save();
         if (!data) {
-            throw new Error("Failed");
+            throw new Error("Failed to save category.");
         }
 
         return res.status(200).json({
             message: "Success",
-            datas: data,
+            data: data, 
         });
     } catch (error) {
         return res.status(500).json({
@@ -99,7 +117,6 @@ export const createCategory = async (req, res) => {
         });
     }
 };
-
 export const updateCategory = async (req, res) => {
     try {
         const body = req.body;
@@ -144,8 +161,12 @@ export const removeCategory = async (req, res) => {
                     message: "Xoá danh mục thất bại!",
                 });
             }
+
+            if (Category.imageUrl && Category.imageUrl.publicId) {
+                await cloudinary.uploader.destroy(Category.imageUrl.publicId);
+            }
             // Thêm thông báo cho admin
-            await createNotificationForAdmin(`danh mục ${data.name} đã bị xoá bởi ${req.user.email}`, "category",req.user._id,"admin");
+            await createNotificationForAdmin(`danh mục ${data.name} đã bị xoá bởi ${req.user.email}`, "category", req.user._id, "admin");
             return res.status(200).json({
                 message: "Xoá danh mục thành công!",
                 data,

@@ -5,14 +5,18 @@ const categorySchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            required: true,
+           
         },
         description: {
             type: String,
         },
         imageUrl: {
-            type: String,
-        },
+            type: Object,
+            default: {
+              "publicId":"0",
+              "url":"https://res.cloudinary.com/dxspp5ba5/image/upload/v1708917933/Old_Nike_logo_ofhr9m.jpg"
+            }
+          },
         status: {
             type: String,
             enum: ["active", "inactive"],
