@@ -124,6 +124,52 @@ export const getOneVoucher = async (req, res) => {
   }
 };
 
+export const useVoucher = async (req, res) => {
+  try {
+    const code = req.body.Code;
+    const vouchers = await voucher.findOne({ Code: code });
+    if (!vouchers) {
+      return res.status(404).json({
+        message: "Không tìm thấy voucher",
+      });
+    }
+    if (vouchers.isDelete) {
+      return res.status(400).json({
+        message: "Mã giảm giá đã hết hạn",
+      });
+    }
+    if (vouchers.Quantity <= 0) {
+      return res.status(400).json({
+        message: "Mã giảm giá đã hết số lượng",
+      });
+    }
+    const currentDate = new Date();
+    const startDate = new Date(vouchers.start_date);
+    const expirationDate = new Date(vouchers.expiration_date);
+
+    if (currentDate < startDate || currentDate > expirationDate) {
+      return res.status(400).json({
+        message: "Mã giảm giá không hoạt động",
+      });
+    }
+
+    vouchers.Quantity -= 1;
+    await vouchers.save();
+
+    res.status(200).json({
+      message: "Sử dụng voucher thành công",
+      data: vouchers,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+
+
 export const updateVoucher = async (req, res) => {
   try {
     const { id } = req.params;
