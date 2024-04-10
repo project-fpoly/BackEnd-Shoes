@@ -174,8 +174,10 @@ const createOrder = async (req, res) => {
     }
 
     const voucherToUpdate = await voucher.findOne({ Code: voucherr });
-    voucherToUpdate.Quantity -= 1;
-    await voucherToUpdate.save();
+    if (voucherToUpdate) {
+      voucherToUpdate.Quantity -= 1;
+      await voucherToUpdate.save();
+    }
 
     if (userEmail) {
       const transporter = nodemailer.createTransport({
