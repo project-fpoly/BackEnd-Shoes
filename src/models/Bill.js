@@ -60,6 +60,7 @@ const BillSchema = new mongoose.Schema(
     },
     isPaid: { type: Boolean, default: false },
     isDelivered: { type: String, default: "Chờ xác nhận" },
+    voucher: { type: String },
   },
   { versionKey: false, timestamps: true }
 );

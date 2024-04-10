@@ -7,6 +7,7 @@ import Bill from "../models/Bill.js";
 import User from "../models/User.js";
 import { createNotificationForAdmin } from "./notification.js";
 import io from "socket.io-client";
+import voucher from "../models/voucher.js";
 dotenv.config();
 const { GMAIL_ADMIN, PASS_ADMIN } = process.env;
 
@@ -104,8 +105,9 @@ const addCartItems = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { shippingAddress, cartItems, payment_method, totalPrice } = req.body;
-    console.log(totalPrice);
+    const { shippingAddress, cartItems, payment_method, totalPrice, voucherr } =
+      req.body;
+    console.log(voucherr);
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
     let cart;
@@ -160,6 +162,7 @@ const createOrder = async (req, res) => {
       isPaid: payment_method === "Thanh toán tiền mặt" ? false : true,
       shippingAddress,
       totalPrice: totalPrice,
+      voucher: voucherr,
       trackingNumber: generateTrackingNumber(),
     });
     for (const item of order.cartItems) {
@@ -169,6 +172,11 @@ const createOrder = async (req, res) => {
         { $inc: { "sizes.$.quantity": -item.quantity } }
       );
     }
+
+    const voucherToUpdate = await voucher.findOne({ Code: voucherr });
+    voucherToUpdate.Quantity -= 1;
+    await voucherToUpdate.save();
+
     if (userEmail) {
       const transporter = nodemailer.createTransport({
         service: "gmail",

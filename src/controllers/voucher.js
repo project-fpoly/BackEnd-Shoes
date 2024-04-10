@@ -83,7 +83,7 @@ export const getVouchers = async (req, res) => {
 
 export const getOneVoucher = async (req, res) => {
   try {
-    const code = req.body.Code;
+    const { code } = req.params;
     const currentDate = new Date();
 
     const vouchers = await voucher.findOne({ Code: code });
@@ -100,9 +100,9 @@ export const getOneVoucher = async (req, res) => {
     }
     if (vouchers.Quantity <= 0) {
       return res.status(400).json({
-          message: "Mã giảm giá đã hết số lượng",
+        message: "Mã giảm giá đã hết số lượng",
       });
-  }
+    }
     const startDate = new Date(vouchers.start_date);
     const expirationDate = new Date(vouchers.expiration_date);
 
@@ -168,7 +168,6 @@ export const useVoucher = async (req, res) => {
     });
   }
 };
-
 
 export const updateVoucher = async (req, res) => {
   try {
