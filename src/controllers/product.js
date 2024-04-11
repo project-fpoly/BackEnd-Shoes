@@ -220,10 +220,30 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
 
   if (priceFilter) {
     const [minPrice, maxPrice] = priceFilter.split("->");
-    if (!isNaN(minPrice) && !isNaN(maxPrice)) {
-      searchCondition.price = { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) };
+    if (minPrice !== "" && maxPrice !== "") {
+      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+        if (minPrice === maxPrice) {
+          searchCondition.price = { $eq: parseInt(minPrice) };
+        } else {
+          searchCondition.price = { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) };
+        }
+      } else {
+        throw new Error("Giá trị minPrice hoặc maxPrice không hợp lệ");
+      }
+    } else if (minPrice !== "") {
+      if (!isNaN(minPrice)) {
+        searchCondition.price = { $gte: parseInt(minPrice) };
+      } else {
+        throw new Error("Giá trị minPrice không hợp lệ");
+      }
+    } else if (maxPrice !== "") {
+      if (!isNaN(maxPrice)) {
+        searchCondition.price = { $lte: parseInt(maxPrice) };
+      } else {
+        throw new Error("Giá trị maxPrice không hợp lệ");
+      }
     } else {
-      throw new Error("Giá trị minPrice hoặc maxPrice không hợp lệ");
+      priceFilter = ""
     }
   }
 
@@ -237,11 +257,23 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
     const parsedEndDate = new Date(endDate);
 
     if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
-      searchCondition.release_date = { $gte: parsedStartDate, $lte: parsedEndDate };
+      if (startDate === endDate) {
+        // Trường hợp startDate bằng endDate
+        searchCondition.release_date = { $eq: parsedStartDate };
+      } else {
+        // Trường hợp startDate và endDate khác nhau
+        if (startDate) {
+          searchCondition.release_date = { $gte: parsedStartDate };
+        }
+        if (endDate) {
+          searchCondition.release_date = { $lte: parsedEndDate };
+        }
+      }
     } else {
       throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
     }
   }
+
 
   if (colorFilter) {
     searchCondition.color = colorFilter;
@@ -553,8 +585,13 @@ const tryDeleteProduct = async (req, res) => {
       });
     }
 
-    // Thay đổi trường 'delete' thành true
-    product.isDeleted = true;
+    // Kiểm tra và thêm trường 'isDeleted' nếu chưa tồn tại
+    if (!product.hasOwnProperty("isDeleted")) {
+      product.isDeleted = true;
+    } else {
+      // Nếu trường 'isDeleted' đã tồn tại và có giá trị, cập nhật nó thành true
+      product.isDeleted = true;
+    }
 
     // Cập nhật sản phẩm
     await product.save();
