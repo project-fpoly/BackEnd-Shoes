@@ -1,24 +1,29 @@
 import Product from "../models/Product.js";
 import productValidator from "../validations/product.js";
-import multer from "multer";
 import Category from "../models/Category.js";
 import { isValid } from "date-fns";
 import Notification from "../models/Notification.js";
 import { createNotificationForAdmin } from "./notification.js";
 import Sale from "../models/Sale.js";
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./public/images/product");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + file.originalname);
-  },
-});
+// import { Server as SocketIOServer } from "socket.io";
+// let io;
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 1024 * 1024 * 5 },
-});
+// export const initWebSocketServer = (httpServer) => {
+//   io = new SocketIOServer(httpServer);
+
+//   // Lắng nghe sự kiện kết nối từ client
+//   io.on("connection", (socket) => {
+//     console.log("Client connected:", socket.id);
+
+//     // Lắng nghe sự kiện "disconnect" từ client
+//     socket.on("disconnect", () => {
+//       console.log("Client disconnected:", socket.id);
+//     });
+//   });
+// };
+const sendNotificationToAllClients = (message) => {
+  io.emit("notification", message);
+};
 const addProduct = async (req, res) => {
   try {
     const {
@@ -41,7 +46,8 @@ const addProduct = async (req, res) => {
 
     // Kiểm tra sản phẩm trùng lặp
     const existingProduct = await Product.findOne({ product_id });
-    if (existingProduct) {
+    const existingProductByName = await Product.findOne({ name });
+    if (existingProduct || existingProductByName) {
       return res.status(409).json({
         status: "error",
         message: "Sản phẩm đã tồn tại",
@@ -71,6 +77,7 @@ const addProduct = async (req, res) => {
       message: "Thêm sản phẩm thành công!",
       data: saveProduct,
     });
+    // sendNotificationToAllClients("Sản phẩm mới đã được thêm vào.");
   } catch (error) {
     res.status(500).json({
       status: "error",
@@ -94,6 +101,11 @@ const getAllProduct = async (req, res) => {
 
     const { products, total } = await getProductsWithPagination(searchCondition, options);
     const totalPages = Math.ceil(total / options.limit);
+
+    // Kiểm tra và ẩn những kích thước có quantity = 0 trong mỗi sản phẩm
+    products.forEach(product => {
+      product.sizes = product.sizes.filter(size => size.quantity > 0);
+    });
 
     if (products.length === 0) {
       return res.status(404).json({
@@ -253,27 +265,31 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
 
   if (releaseDateFilter) {
     const [startDate, endDate] = releaseDateFilter.split("->");
-    const parsedStartDate = new Date(startDate);
-    const parsedEndDate = new Date(endDate);
 
-    if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
-      if (startDate === endDate) {
-        // Trường hợp startDate bằng endDate
-        searchCondition.release_date = { $eq: parsedStartDate };
+    if (startDate && endDate) {
+      const parsedStartDate = new Date(startDate);
+      const parsedEndDate = new Date(endDate);
+
+      if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
+        const searchCondition = {};
+
+        if (parsedStartDate.getTime() !== parsedEndDate.getTime()) {
+          searchCondition.release_date = {
+            $gte: parsedStartDate,
+            $lte: parsedEndDate
+          };
+        } else {
+          searchCondition.release_date = { $eq: parsedStartDate };
+        }
+
+        // Sử dụng searchCondition ở đây cho mục đích tiếp theo trong việc tìm kiếm
       } else {
-        // Trường hợp startDate và endDate khác nhau
-        if (startDate) {
-          searchCondition.release_date = { $gte: parsedStartDate };
-        }
-        if (endDate) {
-          searchCondition.release_date = { $lte: parsedEndDate };
-        }
+        throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
       }
     } else {
-      throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
+      throw new Error("Thiếu giá trị startDate hoặc endDate trong releaseDateFilter");
     }
   }
-
 
   if (colorFilter) {
     searchCondition.color = colorFilter;
@@ -439,14 +455,22 @@ export const fetchSize = async (req, res) => {
 // GetDetail
 const getDetailProduct = async (req, res) => {
   try {
-    // Tìm sản phẩm theo ID
-    const product = await Product.findById(req.params.id).populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date ");
+    // Tìm sản phẩm theo ID và tăng giá trị của trường hits lên 1, hoặc tạo mới nếu chưa tồn tại
+    let product = await Product.findOneAndUpdate(
+      { _id: req.params.id }, 
+      { $inc: { hits: 1 } },
+      { 
+        new: true, // Trả về bản ghi đã được cập nhật
+        upsert: true // Tạo mới bản ghi nếu không tìm thấy
+      }
+    ).populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date ");
 
     if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm"
       });
     }
+    product.sizes = product.sizes.filter(size => size.quantity > 0);
 
     if (product.sale) {
       const saleInfo = await Sale.findById(product.sale);
@@ -466,7 +490,6 @@ const getDetailProduct = async (req, res) => {
       }
     }
 
-    // Trả về thông tin chi tiết sản phẩm
     res.status(200).json({
       message: "Lấy chi tiết sản phẩm thành công",
       data: product,
@@ -479,6 +502,7 @@ const getDetailProduct = async (req, res) => {
     });
   }
 };
+
 
 
 const updateProduct = async (req, res) => {
@@ -673,6 +697,35 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const incrementHit = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return res.status(404).json({
+        status: "error",
+        message: "Sản phẩm không tồn tại",
+      });
+    }
+    if (!existingProduct.hits) {
+      await Product.updateOne({ _id: productId }, { $set: { hits: 0 } });
+    }
+    await Product.updateOne({ _id: productId }, { $inc: { hits: 1 } });
+
+    res.status(200).json({
+      status: "success",
+      message: "Đã tăng lượt xem thành công!",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Lỗi máy chủ",
+      error: error.message,
+    });
+  }
+};
+
+
 export {
   addProduct,
   getAllProduct,
@@ -682,5 +735,6 @@ export {
   RestoreProduct,
   deleteProduct,
   updateField,
-  upload,
+  incrementHit,
+
 };

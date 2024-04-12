@@ -10,7 +10,6 @@ import {
   fetchColor,
   fetchSize,
   fetchTechSpec,
-  upload,
   updateField,
 } from "../controllers/product.js";
 import express from "express";
