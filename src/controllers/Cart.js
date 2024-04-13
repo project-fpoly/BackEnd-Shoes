@@ -521,7 +521,36 @@ const getOrderById = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+const getOrderByIdAdmin = async (req, res) => {
+  try {
+    const { search } = req.query;
+    console.log(search);
+    let query = {};
 
+    // Chỉ tạo query nếu biến search không rỗng
+    if (search && search.trim() !== "") {
+      // Kiểm tra xem search có rỗng hay không
+      query.$or = [{ trackingNumber: { $regex: search, $options: "i" } }];
+    }
+
+    let data = {};
+    // Kiểm tra nếu có truy vấn, thực hiện tìm kiếm và gán kết quả vào biến data
+    if (Object.keys(query).length !== 0) {
+      const order = await Bill.find({ ...query });
+      data = order;
+    }
+
+    // Nếu không có kết quả tìm kiếm và biến search rỗng, trả về lỗi 404
+    if (!data.length && (!search || search.trim() === "")) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 const getAllOrderAdmin = async (req, res) => {
   try {
     const { page = 1, limit = 10, start, end, search } = req.query;
@@ -690,4 +719,5 @@ export {
   findUserOrders,
   updateCart,
   updateIsDeliveredOrder,
+  getOrderByIdAdmin,
 };
