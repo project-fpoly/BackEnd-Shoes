@@ -5,25 +5,8 @@ import { isValid } from "date-fns";
 import Notification from "../models/Notification.js";
 import { createNotificationForAdmin } from "./notification.js";
 import Sale from "../models/Sale.js";
-// import { Server as SocketIOServer } from "socket.io";
-// let io;
-
-// export const initWebSocketServer = (httpServer) => {
-//   io = new SocketIOServer(httpServer);
-
-//   // Lắng nghe sự kiện kết nối từ client
-//   io.on("connection", (socket) => {
-//     console.log("Client connected:", socket.id);
-
-//     // Lắng nghe sự kiện "disconnect" từ client
-//     socket.on("disconnect", () => {
-//       console.log("Client disconnected:", socket.id);
-//     });
-//   });
-// };
-const sendNotificationToAllClients = (message) => {
-  io.emit("notification", message);
-};
+import Bill from "../models/Bill.js";
+import { Cart, CartItem } from "../models/Cart.js";
 const addProduct = async (req, res) => {
   try {
     const {
@@ -34,7 +17,7 @@ const addProduct = async (req, res) => {
     // Kiểm tra dữ liệu đầu vào sử dụng validator
     const validationResult = productValidator.validate(req.body, {
       abortEarly: false,
-    });;
+    });
 
     if (validationResult.error) {
       return res.status(400).json({
@@ -86,17 +69,18 @@ const addProduct = async (req, res) => {
     });
   }
 };
+
 // getAll
 const getAllProduct = async (req, res) => {
   try {
-    const { page, pageSize, searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, sortOrder } = req.query;
+    const { page, pageSize, searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, sortOrder, filterOutOfStock } = req.query;
 
     const options = {
       page: parseInt(page, 10) || 1,
       limit: parseInt(pageSize, 10) || 10,
     };
 
-    const searchCondition = buildSearchCondition(searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter);
+    const searchCondition = buildSearchCondition(searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, filterOutOfStock);
     const sortOptions = buildSortOptions(sortOrder);
 
     const { products, total } = await getProductsWithPagination(searchCondition, options);
@@ -151,6 +135,9 @@ const getAllProduct = async (req, res) => {
     if (genderFilter) {
       successMessage += " Bạn đã chọn giới tính là: " + genderFilter + ";";
     }
+    if (filterOutOfStock) {
+      successMessage += " Bạn đã chọn sản phẩm hết hàng là: " + filterOutOfStock + ";";
+    }
 
     let sortOrderMessage = "";
     switch (sortOrder) {
@@ -190,6 +177,14 @@ const getAllProduct = async (req, res) => {
       case "desc_release_date":
         sortOrderMessage = "Ngày ra mắt giảm dần";
         break;
+      case "asc_createdAt":
+        sortOptions.createdAt = 1;
+        sortOrderMessage = "Ngày tạo tăng dần";
+        break;
+      case "desc_createdAt":
+        sortOptions.createdAt = -1;
+        sortOrderMessage = "Ngày tạo giảm dần";
+        break;
       default:
         sortOrderMessage = "mặc định";
         break;
@@ -216,7 +211,7 @@ const getAllProduct = async (req, res) => {
 };
 
 const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFilter,
-  materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter) => {
+  materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter, stockStatusFilter, filterOutOfStock) => {
   const searchKeywordRegex = new RegExp(searchKeyword || "", "i");
   let searchCondition = {
     $or: [{ name: searchKeywordRegex }],
@@ -305,7 +300,9 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
   if (categoryNameFilter) {
     searchCondition["category.name"] = categoryNameFilter;
   }
-
+  if (filterOutOfStock) {
+    searchCondition.quantity = 0;
+  }
   return searchCondition;
 };
 
@@ -335,12 +332,17 @@ const buildSortOptions = (sortOrder) => {
     sortOptions.release_date = 1;
   } else if (sortOrder === "desc_release_date") {
     sortOptions.release_date = -1;
+  } else if (sortOrder === "asc_createdAt") {
+    sortOptions.createdAt = 1;
+  } else if (sortOrder === "desc_createdAt") {
+    sortOptions.createdAt = -1;
   } else {
     sortOptions.price = 0;
   }
 
   return sortOptions;
 };
+
 
 const getProductsWithPagination = async (searchCondition, options) => {
   const products = await Product.find(searchCondition)
@@ -457,9 +459,9 @@ const getDetailProduct = async (req, res) => {
   try {
     // Tìm sản phẩm theo ID và tăng giá trị của trường hits lên 1, hoặc tạo mới nếu chưa tồn tại
     let product = await Product.findOneAndUpdate(
-      { _id: req.params.id }, 
+      { _id: req.params.id },
       { $inc: { hits: 1 } },
-      { 
+      {
         new: true, // Trả về bản ghi đã được cập nhật
         upsert: true // Tạo mới bản ghi nếu không tìm thấy
       }
@@ -509,17 +511,55 @@ const updateProduct = async (req, res) => {
   try {
     const productId = req.params.id;
     const updateData = req.body;
+    // Loại bỏ trường "_id" khỏi các đối tượng size
+    if (updateData.sizes && Array.isArray(updateData.sizes)) {
+      updateData.sizes = updateData.sizes.map(size => {
+        const { _id, ...rest } = size;
+        return rest;
+      });
+    }
 
-    const product = await Product.findById(productId);
 
-    if (!productId) {
+    // Kiểm tra dữ liệu đầu vào sử dụng validator
+    const validationResult = productValidator.validate(updateData, {
+      abortEarly: false,
+    });
+
+    if (validationResult.error) {
+      return res.status(400).json({
+        status: "error",
+        message: "Dữ liệu không hợp lệ",
+        error: validationResult.error.details.map(detail => detail.message),
+      });
+    }
+
+    // Kiểm tra tồn tại của sản phẩm
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return res.status(404).json({
+        status: "error",
+        message: "Không tìm thấy sản phẩm",
+      });
+    }
+
+    // Kiểm tra sản phẩm trùng lặp
+    const existingProductById = await Product.findOne({ product_id: updateData.product_id });
+    const existingProductByName = await Product.findOne({ name: updateData.name });
+    if ((existingProductById && existingProductById._id.toString() !== productId) ||
+      (existingProductByName && existingProductByName._id.toString() !== productId)) {
+      return res.status(409).json({
+        status: "error",
+        message: "Sản phẩm đã tồn tại",
+      });
+    }
+
+    const product = await Product.findByIdAndUpdate(productId, { $set: updateData }, { new: true });
+    if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm"
       });
     }
-
-    //Kiểm tra có trùng size hay ko
-
+    //Kiểm tra có trùng size hay không
     const sizesMap = new Map();
     updateData.sizes.forEach(size => {
       const name = size.name;
@@ -537,13 +577,14 @@ const updateProduct = async (req, res) => {
     });
     newSizes.sort((a, b) => parseInt(a.name) - parseInt(b.name));
     updateData.sizes = newSizes;
+
     // Cập nhật thông tin sản phẩm
-    await Product.findByIdAndUpdate(productId, { $set: req.body });
+    await Product.findByIdAndUpdate(productId, { $set: updateData });
 
     await Category.updateMany({ products: productId }, { $pull: { products: productId } });
-    await Category.findByIdAndUpdate(req.body.categoryId, { $addToSet: { products: productId } });
+    await Category.findByIdAndUpdate(updateData.categoryId, { $addToSet: { products: productId } });
     await Sale.updateMany({ product: productId }, { $pull: { product: productId } });
-    await Sale.findByIdAndUpdate(req.body.sale, { $addToSet: { product: productId } });
+    await Sale.findByIdAndUpdate(updateData.sale, { $addToSet: { product: productId } });
 
     return res.status(200).json({
       message: "Cập nhật sản phẩm thành công!",
@@ -557,6 +598,7 @@ const updateProduct = async (req, res) => {
     });
   }
 };
+
 
 const updateField = async (req, res) => {
   try {
@@ -666,20 +708,31 @@ const RestoreProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-
     // Kiểm tra sản phẩm có tồn tại
     const product = await Product.findById(req.params.id);
-
     if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm"
       });
     }
-    // Xóa sản phẩm khỏi danh mục liên quan
-    await Category.updateMany({ products: req.params.id }, { $pull: { products: req.params.id } });
-    await Sale.updateMany({ product: req.params.id }, { $pull: { product: req.params.id } });
 
-    // Xóa sản phẩm   
+    // Kiểm tra xem sản phẩm có trong bất kỳ hóa đơn nào không
+    const billsWithProduct = await Bill.find({ 'cartItems.product': req.params.id });
+    if (billsWithProduct.length > 0) {
+      return res.status(400).json({
+        message: "Không thể xóa sản phẩm vì đã được sử dụng trong các đơn hàng"
+      });
+    }
+
+    // Kiểm tra xem sản phẩm có trong bất kỳ giỏ hàng nào không
+    const carts = await Cart.find({ "cartItems.product": req.params.id });
+    if (carts.length > 0) {
+      return res.status(400).json({
+        message: "Không thể xóa sản phẩm vì đang có trong giỏ hàng của người dùng"
+      });
+    }
+
+    // Nếu không có giỏ hàng hoặc hóa đơn nào chứa sản phẩm, tiếp tục với việc xóa sản phẩm
     await Product.findByIdAndDelete(req.params.id);
 
     // Thêm thông báo cho admin
@@ -688,7 +741,6 @@ const deleteProduct = async (req, res) => {
       message: "Xóa sản phẩm thành công!",
       data: product
     });
-
   } catch (error) {
     return res.status(500).json({
       message: "Lỗi hệ thống",

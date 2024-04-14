@@ -8,6 +8,7 @@ import cors from "cors";
 import session from "express-session";
 import { createNotificationForAdmin } from "./controllers/notification.js";
 import User from "./models/User.js";
+import Product from "./models/Product.js";
 import order from "./controllers/vnpay.js";
 import path from "path";
 import logger from "morgan";
@@ -69,22 +70,30 @@ io.on("connection", (s) => {
   socket.on("realtimeBillforAdmin", (data) => {
     io.emit("realtimeBillforAdmin", { data: data });
   });
+  socket.on("client_add_product", async (data) => {
+    io.emit("server_add_product", { data: data });
+  });
+  socket.on("client_update_product", async (data) => {
+    io.emit('server_update_product', { data: data });
+  });
+
+
   socket.on("log_out", async (data) => {
     await User.findByIdAndUpdate(data.userId, { isActive: false });
     io.emit("update_user_status", { _id: data._id, isActive: false });
-    console.log("hi2",data)
+    console.log("hi2", data)
 
   });
   socket.on("check_active", async (data) => {
     socket.userId = data._id;
     await User.findByIdAndUpdate(data._id, { isActive: true });
     io.emit("update_user_status", { _id: data._id, isActive: true });
-    console.log("log ok",data._id);
+    console.log("log ok", data._id);
   });
   socket.on("disconnect", async () => {
     await User.findByIdAndUpdate(socket.userId, { isActive: false });
     io.emit("update_user_status", { _id: socket.userId, isActive: false });
-    console.log("hi1",socket.userId);
+    console.log("hi1", socket.userId);
   });
 });
 
