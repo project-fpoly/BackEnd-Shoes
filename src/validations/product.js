@@ -7,7 +7,7 @@ const productValidator = Joi.object({
   description: Joi.string().required().min(6).max(500),
   categoryId: Joi.string().allow(null).optional().required(),
   price: Joi.number().min(0).required(),
-  sale: Joi.string().allow(null).optional().required(),
+  sale: Joi.string().allow(null, "").optional(),
   discount: Joi.number(),
   sold_count: Joi.number().default(0),
   rating: Joi.number(),

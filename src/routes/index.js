@@ -11,13 +11,14 @@ import routerVoucher from "./voucher";
 import routerSale from "./sale";
 import routerAnalytic from "./analytic";
 import routerDashboard from "./dashboard";
+import routerChat from "./chat";
 
 const router = express.Router();
 router.use("/auth", routerAuth);
 router.use("/bill", routerBill);
 
 router.use("/product", routerProduct);
-
+router.use("/chat",routerChat);
 router.use("/categories", routerCategory);
 router.use("/comments", routerComment);
 router.use("/order", routerCart);
