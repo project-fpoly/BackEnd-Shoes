@@ -6,10 +6,6 @@ const favItemSchema = new mongoose.Schema({
     ref: "Product",
     required: true,
   },
-  size: {
-    type: String,
-    required: true,
-  },
   price: {
     type: Number,
     required: false,
@@ -22,14 +18,13 @@ const favItemSchema = new mongoose.Schema({
 
 const favSchema = mongoose.Schema(
   {
-    cartItems: [favItemSchema],
+    favItems: [favItemSchema],
 
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: false,
     },
-    totalPrice: { type: Number, default: 0 },
   },
   {
     timestamps: true,

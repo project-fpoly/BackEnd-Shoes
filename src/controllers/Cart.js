@@ -165,11 +165,16 @@ const createOrder = async (req, res) => {
       voucher: voucherr,
       trackingNumber: generateTrackingNumber(),
     });
+
     for (const item of order.cartItems) {
       // Tìm sản phẩm trong cơ sở dữ liệu và cập nhật số lượng
       await Product.updateOne(
         { _id: item.product, "sizes.name": item.size },
         { $inc: { "sizes.$.quantity": -item.quantity } }
+      );
+      await Product.updateMany(
+        { _id: { $in: item.product } },
+        { $inc: { quantity: -item.quantity } }
       );
     }
 
