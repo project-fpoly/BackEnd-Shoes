@@ -3,24 +3,23 @@ import Product from "../models/Product";
 
 export const addFavItems = async (req, res) => {
   try {
-    const quantity = 1;
-    const size = req.body.size;
     const product = req.body.product;
     const userId = req.user?._id;
-    const a = req.body;
-
+    console.log(product);
     let fav;
-
+    console.log(Fav);
     if (userId) {
       // Người dùng đã đăng nhập
       fav = await Fav.findOne({ user: userId });
-
-      if (!fav) {
+      console.log(fav);
+      if (fav === null) {
         fav = new Fav({
           user: userId,
           favItems: [],
-          totalPrice: 0, // Thêm trường totalPrice vào fav
         });
+        await Fav.findByIdAndDelete("661e71a9b5ab5a7ff109eda5");
+
+        console.log(fav);
       }
     } else {
       // Người dùng không đăng nhập, lưu vào session storage
@@ -29,13 +28,12 @@ export const addFavItems = async (req, res) => {
       if (!fav) {
         fav = {
           favItems: [],
-          totalPrice: 0, // Thêm trường totalPrice vào fav
         };
       }
     }
 
     const productModel = await Product.findById(product);
-
+    console.log(productModel);
     if (!productModel) {
       return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
     }
@@ -44,35 +42,17 @@ export const addFavItems = async (req, res) => {
     const productImage = productModel.images;
     const productColor = productModel.color;
 
-    const existingFavItem = fav.favItems.find(
-      (item) => item.product.toString() === product && item.size === size
-    );
-    console.log(existingFavItem);
-    if (existingFavItem) {
-      // Tăng số lượng nếu sản phẩm đã tồn tại trong giỏ hàng
-      existingFavItem.quantity += quantity;
-      existingFavItem.price = productPrice * existingFavItem.quantity;
-    } else {
-      // Thêm sản phẩm mới vào giỏ hàng
-      const newFavItem = {
-        product: product,
-        quantity: quantity,
-        price: productPrice * quantity,
-        images: productImage,
-        size: size,
-        color: productColor,
-      };
-      fav.FavItems.push(newFavItem);
-    }
-
-    // Cập nhật tổng tiền trong giỏ hàng
-    fav.totalPrice = 0;
-    fav.FavItems.forEach((item) => {
-      fav.totalPrice += item.price;
-    });
+    // Thêm sản phẩm mới vào yêu thích
+    const newFavItem = {
+      product: product,
+      price: productPrice,
+      images: productImage,
+      color: productColor,
+    };
+    fav.favItems.push(newFavItem);
 
     if (!userId) {
-      // Lưu giỏ hàng vào session storage khi người dùng không đăng nhập
+      // Lưu yêu thích vào session storage khi người dùng không đăng nhập
       req.session.fav = fav;
     } else {
       await fav.save();
@@ -80,11 +60,11 @@ export const addFavItems = async (req, res) => {
 
     res
       .status(200)
-      .json({ message: "Sản phẩm đã được thêm vào giỏ hàng", fav });
+      .json({ message: "Sản phẩm đã được thêm vào yêu thích", fav });
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Đã xảy ra lỗi khi thêm sản phẩm vào giỏ hàng" });
+      .json({ error: "Đã xảy ra lỗi khi thêm sản phẩm vào yêu thích" });
     console.log(error);
   }
 };
