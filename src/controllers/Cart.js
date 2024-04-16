@@ -479,7 +479,7 @@ const findUserOrders = async (req, res) => {
     const orders = await Bill.find({ user: userId, ...query })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(totalOrders);
 
     res.json({
       orders,
@@ -487,7 +487,7 @@ const findUserOrders = async (req, res) => {
         totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
         currentPage: parseInt(page),
-        limit: parseInt(limit),
+        limit: parseInt(totalOrders),
       },
     });
   } catch (error) {
