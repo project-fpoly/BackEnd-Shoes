@@ -22,7 +22,19 @@ async function registerChatUser(username, secret, email, first_name, last_name, 
         const createdByUser = await User.findById(create_by);
 
         // Lưu thông tin người dùng vào cơ sở dữ liệu
-        const newUser = new Chat({ username, secret, email, first_name, last_name, create_by: { _id: createdByUser._id, userName: createdByUser.userName, email : createdByUser.email } });
+        const newUser = new Chat({ 
+            id_chat: response.data.id, // Lưu id_chat từ phản hồi của ChatEngine
+            username, 
+            secret, 
+            email, 
+            first_name, 
+            last_name, 
+            create_by: { 
+                _id: createdByUser._id, 
+                userName: createdByUser.userName, 
+                email: createdByUser.email 
+            } 
+        });
         await newUser.save();
 
         return response.data;
@@ -59,6 +71,55 @@ async function loginChatUser(username, secret) {
     }
 }
 
+async function getAllChatUsers() {
+    try {
+        const response = await axios.get('https://api.chatengine.io/users/', {
+            headers: { 'Private-Key': CHAT_ENGINE_PRIVATE_KEY }
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error('Đã xảy ra lỗi khi lấy danh sách người dùng.');
+    }
+}
+
+async function deleteChatUser(userId) {
+    try {
+        // Xóa người dùng từ dịch vụ chatengine
+        const response = await axios.delete(`https://api.chatengine.io/users/${userId}/`, {
+            headers: { 'Private-Key': CHAT_ENGINE_PRIVATE_KEY }
+        });
+
+        // Kiểm tra xác nhận xóa thành công từ dịch vụ chatengine
+        if (response.status !== 200) {
+            throw new Error(`Lỗi khi xóa người dùng ${userId} từ dịch vụ chatengine: ${response.statusText}`);
+        }
+
+        // Xóa người dùng từ cơ sở dữ liệu local
+        const deletedUser = await Chat.findOneAndDelete({ id_chat: userId });
+        if (!deletedUser) {
+            throw new Error('Không tìm thấy người dùng để xóa trong cơ sở dữ liệu.');
+        }
+
+        return response.data;
+    } catch (error) {
+        throw new Error('Đã xảy ra lỗi khi xóa người dùng.');
+    }
+}
+
+async function getUserChatByEmail(email) {
+    try {
+        // Tìm kiếm user trong bảng Chat dựa trên email của trường create_by
+        const userChat = await Chat.findOne({ 'create_by.email': email });
+        if (!userChat) {
+            throw new Error('Không tìm thấy userChat.');
+        }
+        return userChat;
+    } catch (error) {
+        throw new Error(`Đã xảy ra lỗi khi lấy userChat: ${error.message}`);
+    }
+}
+
+
 
 // Export các hàm để có thể sử dụng ở nơi khác trong mã của bạn
-export { registerChatUser, loginChatUser };
+export { registerChatUser, loginChatUser,getAllChatUsers, deleteChatUser,getUserChatByEmail };

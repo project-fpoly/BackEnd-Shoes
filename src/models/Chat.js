@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import timestamp from 'mongoose-timestamp';
 
 const chatSchema = new mongoose.Schema({
-  username: { type: String, required: true },
+  username: { type: String, required: false },
   secret: { type: String, required: true },
   email: { type: String, required: false },
   first_name: { type: String, required: false },
@@ -12,6 +12,7 @@ const chatSchema = new mongoose.Schema({
     type: Object,
     required: false,
   },
+  id_chat:{type:Number}
 });
 
 chatSchema.plugin(timestamp);

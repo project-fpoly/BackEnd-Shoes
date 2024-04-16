@@ -20,7 +20,7 @@ const { PORT, DB_URI, SECRET_CODE } = process.env;
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server);
-
+app.use(cors({ origin: true }));
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
