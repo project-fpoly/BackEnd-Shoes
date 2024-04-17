@@ -586,7 +586,7 @@ const getAllOrderAdmin = async (req, res) => {
         totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
         currentPage: parseInt(page),
-        limit: parseInt(limit),
+        limit: search ? totalOrders : parseInt(limit),
       },
     });
   } catch (error) {
