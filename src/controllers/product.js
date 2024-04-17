@@ -1,36 +1,25 @@
 import Product from "../models/Product.js";
 import productValidator from "../validations/product.js";
-import multer from "multer";
 import Category from "../models/Category.js";
 import { isValid } from "date-fns";
 import Notification from "../models/Notification.js";
 import { createNotificationForAdmin } from "./notification.js";
 import Sale from "../models/Sale.js";
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./public/images/product");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + file.originalname);
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 1024 * 1024 * 5 },
-});
+import Bill from "../models/Bill.js";
+import { Cart, CartItem } from "../models/Cart.js";
 const addProduct = async (req, res) => {
   try {
-    const {
-      product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating,
-      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
-    } = req.body;
-
+    // Lấy thông tin sản phẩm từ request body
+    const { product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating, sizes,
+      color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits } = req.body;
+    // Kiểm tra nếu sale là chuỗi rỗng hoặc null, gán lại giá trị là null
+    const saleId = sale === "" || sale === null ? null : sale;
     // Kiểm tra dữ liệu đầu vào sử dụng validator
     const validationResult = productValidator.validate(req.body, {
       abortEarly: false,
-    });;
+    });
 
+    // Kiểm tra các trường dữ liệu
     if (validationResult.error) {
       return res.status(400).json({
         status: "error",
@@ -39,39 +28,44 @@ const addProduct = async (req, res) => {
       });
     }
 
-    // Kiểm tra sản phẩm trùng lặp
+    // Tiếp tục xử lý khi dữ liệu hợp lệ
     const existingProduct = await Product.findOne({ product_id });
-    if (existingProduct) {
+    const existingProductByName = await Product.findOne({ name });
+    if (existingProduct || existingProductByName) {
       return res.status(409).json({
         status: "error",
         message: "Sản phẩm đã tồn tại",
       });
     }
 
-    // Tiếp tục xử lý khi dữ liệu hợp lệ
+    // Tạo sản phẩm mới với sale đã được xử lý
     const newProduct = new Product({
-      product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating,
-      sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
+      product_id, SKU, name, description, categoryId, price, sale: saleId, discount, quantity, sold_count, rating, sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
     });
 
+    // Lưu sản phẩm vào cơ sở dữ liệu
     const saveProduct = await newProduct.save();
 
+    // Cập nhật category nếu cần
     await Category.findByIdAndUpdate(categoryId, {
       $push: { products: saveProduct._id },
     });
 
-    if (sale) {
-      await Sale.findByIdAndUpdate(sale, {
+    // Nếu có sale, cập nhật sale
+    if (saleId) {
+      await Sale.findByIdAndUpdate(saleId, {
         $push: { product: saveProduct._id },
       });
     }
 
+    // Trả về thông báo thành công và dữ liệu sản phẩm đã được thêm
     res.status(200).json({
       status: "success",
       message: "Thêm sản phẩm thành công!",
       data: saveProduct,
     });
   } catch (error) {
+    // Trả về thông báo lỗi nếu có lỗi xảy ra
     res.status(500).json({
       status: "error",
       message: "Lỗi máy chủ",
@@ -79,67 +73,73 @@ const addProduct = async (req, res) => {
     });
   }
 };
+
+
+
 // getAll
+// Hàm lấy tất cả các sản phẩm với phân trang và các bộ lọc
 const getAllProduct = async (req, res) => {
   try {
-    const { page, pageSize, searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, sortOrder } = req.query;
-
+    // Lấy các tham số truy vấn từ yêu cầu
+    const { page, pageSize, searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, sortOrder, filterOutOfStock } = req.query;
+    // Xây dựng các tùy chọn phân trang
     const options = {
-      page: parseInt(page, 10) || 1,
-      limit: parseInt(pageSize, 10) || 10,
+      page: parseInt(page, 10) || 1, // Trang mặc định là 1
+      limit: parseInt(pageSize, 10) || 10, // Số lượng sản phẩm trên mỗi trang mặc định là 10
     };
-
-    const searchCondition = buildSearchCondition(searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter);
+    // Xây dựng điều kiện tìm kiếm dựa trên các tham số truy vấn
+    const searchCondition = buildSearchCondition(searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, filterOutOfStock);
+    // Xây dựng các tùy chọn sắp xếp
     const sortOptions = buildSortOptions(sortOrder);
-
+    // Lấy các sản phẩm với phân trang
     const { products, total } = await getProductsWithPagination(searchCondition, options);
     const totalPages = Math.ceil(total / options.limit);
 
+    // Kiểm tra và ẩn những kích thước có quantity = 0 trong mỗi sản phẩm
+    products.forEach(product => {
+      product.sizes = product.sizes.filter(size => size.quantity > 0);
+    });
+
+    // Nếu không có sản phẩm nào được tìm thấy
     if (products.length === 0) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm nào",
         data: [],
       });
     }
+    // Populate dữ liệu liên quan cho sản phẩm
     const productIds = products.map((product) => product._id);
     let populatedProducts = {};
     populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").populate("sale", "name discount description expiration_date").sort(sortOptions);
     const result = buildResult(populatedProducts, total, options.page, totalPages, options.limit);
-
     let successMessage = "Hiển thị danh sách sản phẩm thành công.";
-
     if (searchKeyword) {
       successMessage += " Bạn đã tìm kiếm: " + searchKeyword + ";";
     }
-
     if (categoryFilter) {
       successMessage += " Bạn đã chọn danh mục: " + categoryFilter + ";";
     }
-
     if (sizeFilter) {
       successMessage += " Bạn đã chọn kích thước: " + sizeFilter + ";";
     }
-
     if (priceFilter) {
       successMessage += " Bạn đã chọn mức giá: " + priceFilter + ";";
     }
-
     if (materialFilter) {
       successMessage += " Bạn đã chọn chất liệu: " + materialFilter + ";";
     }
-
     if (releaseDateFilter) {
       successMessage += " Bạn đã chọn khoảng thời gian phát hành: " + releaseDateFilter + ";";
     }
-
     if (colorFilter) {
       successMessage += " Bạn đã chọn màu sắc của sản phẩm là: " + colorFilter + ";";
     }
-
     if (genderFilter) {
       successMessage += " Bạn đã chọn giới tính là: " + genderFilter + ";";
     }
-
+    if (filterOutOfStock) {
+      successMessage += " Bạn đã chọn sản phẩm hết hàng là: " + filterOutOfStock + ";";
+    }
     let sortOrderMessage = "";
     switch (sortOrder) {
       case "asc":
@@ -178,13 +178,20 @@ const getAllProduct = async (req, res) => {
       case "desc_release_date":
         sortOrderMessage = "Ngày ra mắt giảm dần";
         break;
+      case "asc_createdAt":
+        sortOptions.createdAt = 1;
+        sortOrderMessage = "Ngày tạo tăng dần";
+        break;
+      case "desc_createdAt":
+        sortOptions.createdAt = -1;
+        sortOrderMessage = "Ngày tạo giảm dần";
+        break;
       default:
         sortOrderMessage = "mặc định";
         break;
     }
 
     successMessage += " Bạn đã chọn thứ tự sắp xếp theo: " + sortOrderMessage;
-
     res.status(200).json({
       message: successMessage,
       totalProducts: result.totalDocs,
@@ -192,9 +199,9 @@ const getAllProduct = async (req, res) => {
       pageSize: result.pageSize,
       page: result.page,
       data: result.products,
-
     });
   } catch (error) {
+    // Xử lý lỗi nếu có bất kỳ lỗi nào xảy ra
     console.log(error);
     res.status(500).json({
       message: "Đã có lỗi xảy ra",
@@ -203,8 +210,10 @@ const getAllProduct = async (req, res) => {
   }
 };
 
+// Hàm xây dựng điều kiện tìm kiếm dựa trên các tham số truy vấn
 const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFilter,
-  materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter) => {
+  materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter, stockStatusFilter, filterOutOfStock) => {
+  // Tạo biểu thức chính quy từ từ khóa tìm kiếm và không phân biệt chữ hoa chữ thường
   const searchKeywordRegex = new RegExp(searchKeyword || "", "i");
   let searchCondition = {
     $or: [{ name: searchKeywordRegex }],
@@ -217,13 +226,45 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
   if (sizeFilter) {
     searchCondition["sizes.name"] = sizeFilter;
   }
-
   if (priceFilter) {
     const [minPrice, maxPrice] = priceFilter.split("->");
-    if (!isNaN(minPrice) && !isNaN(maxPrice)) {
-      searchCondition.price = { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) };
-    } else {
-      throw new Error("Giá trị minPrice hoặc maxPrice không hợp lệ");
+    if (minPrice !== "" && maxPrice !== "") {
+      // Nếu cả hai giá trị min và max đều được cung cấp
+      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+        // Kiểm tra xem minPrice và maxPrice có phải là số hay không
+        if (minPrice === maxPrice) {
+          // Nếu minPrice bằng maxPrice, áp dụng điều kiện giá bằng
+          searchCondition.price = { $eq: parseInt(minPrice) };
+        } else {
+          // Nếu minPrice khác maxPrice, áp dụng điều kiện giá lớn hơn hoặc bằng minPrice và nhỏ hơn hoặc bằng maxPrice
+          searchCondition.price = { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) };
+        }
+      } else {
+        // Nếu minPrice hoặc maxPrice không phải là số, ném ra một lỗi
+        throw new Error("Giá trị minPrice hoặc maxPrice không hợp lệ");
+      }
+    } else if (minPrice !== "") {
+      // Nếu chỉ có giá trị minPrice được cung cấp
+      if (!isNaN(minPrice)) {
+        // Kiểm tra xem minPrice có phải là số hay không
+        searchCondition.price = { $gte: parseInt(minPrice) };
+      } else {
+        // Nếu minPrice không phải là số, ném ra một lỗi
+        throw new Error("Giá trị minPrice không hợp lệ");
+      }
+    } else if (maxPrice !== "") {
+      // Nếu chỉ có giá trị maxPrice được cung cấp
+      if (!isNaN(maxPrice)) {
+        // Kiểm tra xem maxPrice có phải là số hay không
+        searchCondition.price = { $lte: parseInt(maxPrice) };
+      } else {
+        // Nếu maxPrice không phải là số, ném ra một lỗi
+        throw new Error("Giá trị maxPrice không hợp lệ");
+      }
+    }
+    // Nếu không có giá trị nào trong bộ lọc giá, gán giá trị rỗng
+    else {
+      priceFilter = "";
     }
   }
 
@@ -233,13 +274,29 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
 
   if (releaseDateFilter) {
     const [startDate, endDate] = releaseDateFilter.split("->");
-    const parsedStartDate = new Date(startDate);
-    const parsedEndDate = new Date(endDate);
 
-    if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
-      searchCondition.release_date = { $gte: parsedStartDate, $lte: parsedEndDate };
+    if (startDate && endDate) {
+      const parsedStartDate = new Date(startDate);
+      const parsedEndDate = new Date(endDate);
+
+      if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
+        const searchCondition = {};
+
+        if (parsedStartDate.getTime() !== parsedEndDate.getTime()) {
+          searchCondition.release_date = {
+            $gte: parsedStartDate,
+            $lte: parsedEndDate
+          };
+        } else {
+          searchCondition.release_date = { $eq: parsedStartDate };
+        }
+
+        // Sử dụng searchCondition ở đây cho mục đích tiếp theo trong việc tìm kiếm
+      } else {
+        throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
+      }
     } else {
-      throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
+      throw new Error("Thiếu giá trị startDate hoặc endDate trong releaseDateFilter");
     }
   }
 
@@ -257,7 +314,9 @@ const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFi
   if (categoryNameFilter) {
     searchCondition["category.name"] = categoryNameFilter;
   }
-
+  if (filterOutOfStock) {
+    searchCondition.quantity = 0;
+  }
   return searchCondition;
 };
 
@@ -287,6 +346,10 @@ const buildSortOptions = (sortOrder) => {
     sortOptions.release_date = 1;
   } else if (sortOrder === "desc_release_date") {
     sortOptions.release_date = -1;
+  } else if (sortOrder === "asc_createdAt") {
+    sortOptions.createdAt = 1;
+  } else if (sortOrder === "desc_createdAt") {
+    sortOptions.createdAt = -1;
   } else {
     sortOptions.price = 0;
   }
@@ -294,14 +357,20 @@ const buildSortOptions = (sortOrder) => {
   return sortOptions;
 };
 
+// Hàm getProductsWithPagination nhận vào điều kiện tìm kiếm (searchCondition) và tùy chọn (options) để truy vấn dữ liệu sản phẩm với phân trang.
 const getProductsWithPagination = async (searchCondition, options) => {
+  // Sử dụng phương thức find() để tìm kiếm các sản phẩm dựa trên điều kiện tìm kiếm được cung cấp.
   const products = await Product.find(searchCondition)
+    // Sử dụng phương thức skip() để bỏ qua các sản phẩm không cần thiết dựa trên trang hiện tại và số lượng sản phẩm trên mỗi trang.
     .skip((options.page - 1) * options.limit)
+    // Sử dụng phương thức limit() để giới hạn số lượng sản phẩm được trả về trên mỗi trang.
     .limit(options.limit)
     .exec();
 
+  // Sử dụng phương thức countDocuments() để đếm tổng số sản phẩm phù hợp với điều kiện tìm kiếm.
   const total = await Product.countDocuments(searchCondition).exec();
 
+  // Kết quả cuối cùng là một đối tượng chứa danh sách sản phẩm và tổng số sản phẩm.
   return { products, total };
 };
 
@@ -407,14 +476,22 @@ export const fetchSize = async (req, res) => {
 // GetDetail
 const getDetailProduct = async (req, res) => {
   try {
-    // Tìm sản phẩm theo ID
-    const product = await Product.findById(req.params.id).populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date ");
+    // Tìm sản phẩm theo ID và tăng giá trị của trường hits lên 1, hoặc tạo mới nếu chưa tồn tại
+    let product = await Product.findOneAndUpdate(
+      { _id: req.params.id },
+      { $inc: { hits: 1 } },
+      {
+        new: true, // Trả về bản ghi đã được cập nhật
+        upsert: true // Tạo mới bản ghi nếu không tìm thấy
+      }
+    ).populate("categoryId", "name").populate("sale", "name discount description quantity expiration_date ");
 
     if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm"
       });
     }
+    product.sizes = product.sizes.filter(size => size.quantity > 0);
 
     if (product.sale) {
       const saleInfo = await Sale.findById(product.sale);
@@ -434,7 +511,6 @@ const getDetailProduct = async (req, res) => {
       }
     }
 
-    // Trả về thông tin chi tiết sản phẩm
     res.status(200).json({
       message: "Lấy chi tiết sản phẩm thành công",
       data: product,
@@ -454,16 +530,60 @@ const updateProduct = async (req, res) => {
     const productId = req.params.id;
     const updateData = req.body;
 
-    const product = await Product.findById(productId);
+    // Kiểm tra nếu trường "sale" trống, thiết lập nó thành null
+    if (updateData.sale === "") {
+      updateData.sale = null;
+    }
 
-    if (!productId) {
+    // Loại bỏ trường "_id" khỏi các đối tượng size
+    if (updateData.sizes && Array.isArray(updateData.sizes)) {
+      updateData.sizes = updateData.sizes.map(size => {
+        const { _id, ...rest } = size;
+        return rest;
+      });
+    }
+
+    // Kiểm tra dữ liệu đầu vào sử dụng validator
+    const validationResult = productValidator.validate(updateData, {
+      abortEarly: false,
+    });
+
+    if (validationResult.error) {
+      return res.status(400).json({
+        status: "error",
+        message: "Dữ liệu không hợp lệ",
+        error: validationResult.error.details.map(detail => detail.message),
+      });
+    }
+
+    // Kiểm tra tồn tại của sản phẩm
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return res.status(404).json({
+        status: "error",
+        message: "Không tìm thấy sản phẩm",
+      });
+    }
+
+    // Kiểm tra sản phẩm trùng lặp
+    const existingProductById = await Product.findOne({ product_id: updateData.product_id });
+    const existingProductByName = await Product.findOne({ name: updateData.name });
+    if ((existingProductById && existingProductById._id.toString() !== productId) ||
+      (existingProductByName && existingProductByName._id.toString() !== productId)) {
+      return res.status(409).json({
+        status: "error",
+        message: "Sản phẩm đã tồn tại",
+      });
+    }
+
+    const product = await Product.findByIdAndUpdate(productId, { $set: updateData }, { new: true });
+    if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm"
       });
     }
 
-    //Kiểm tra có trùng size hay ko
-
+    //Kiểm tra có trùng size hay không
     const sizesMap = new Map();
     updateData.sizes.forEach(size => {
       const name = size.name;
@@ -481,13 +601,24 @@ const updateProduct = async (req, res) => {
     });
     newSizes.sort((a, b) => parseInt(a.name) - parseInt(b.name));
     updateData.sizes = newSizes;
-    // Cập nhật thông tin sản phẩm
-    await Product.findByIdAndUpdate(productId, { $set: req.body });
 
+    // Xóa những sản phẩm cũ trong bảng Sale nếu sale không tồn tại
+    if (!updateData.sale) {
+      await Sale.updateMany({ product: productId }, { $pull: { product: productId } });
+    }
+
+    // Cập nhật thông tin sản phẩm
+    await Product.findByIdAndUpdate(productId, { $set: updateData });
+
+    // Cập nhật danh mục và danh sách khuyến mãi
     await Category.updateMany({ products: productId }, { $pull: { products: productId } });
-    await Category.findByIdAndUpdate(req.body.categoryId, { $addToSet: { products: productId } });
-    await Sale.updateMany({ product: productId }, { $pull: { product: productId } });
-    await Sale.findByIdAndUpdate(req.body.sale, { $addToSet: { product: productId } });
+    await Category.findByIdAndUpdate(updateData.categoryId, { $addToSet: { products: productId } });
+
+    // Nếu trường "sale" có giá trị, cập nhật danh sách sản phẩm trong trường "product" của khuyến mãi
+    if (updateData.sale) {
+      await Sale.updateMany({ product: productId }, { $pull: { product: productId } });
+      await Sale.findByIdAndUpdate(updateData.sale, { $addToSet: { product: productId } });
+    }
 
     return res.status(200).json({
       message: "Cập nhật sản phẩm thành công!",
@@ -501,6 +632,7 @@ const updateProduct = async (req, res) => {
     });
   }
 };
+
 
 const updateField = async (req, res) => {
   try {
@@ -553,8 +685,13 @@ const tryDeleteProduct = async (req, res) => {
       });
     }
 
-    // Thay đổi trường 'delete' thành true
-    product.isDeleted = true;
+    // Kiểm tra và thêm trường 'isDeleted' nếu chưa tồn tại
+    if (!product.hasOwnProperty("isDeleted")) {
+      product.isDeleted = true;
+    } else {
+      // Nếu trường 'isDeleted' đã tồn tại và có giá trị, cập nhật nó thành true
+      product.isDeleted = true;
+    }
 
     // Cập nhật sản phẩm
     await product.save();
@@ -605,20 +742,31 @@ const RestoreProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-
     // Kiểm tra sản phẩm có tồn tại
     const product = await Product.findById(req.params.id);
-
     if (!product) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm"
       });
     }
-    // Xóa sản phẩm khỏi danh mục liên quan
-    await Category.updateMany({ products: req.params.id }, { $pull: { products: req.params.id } });
-    await Sale.updateMany({ product: req.params.id }, { $pull: { product: req.params.id } });
 
-    // Xóa sản phẩm   
+    // Kiểm tra xem sản phẩm có trong bất kỳ hóa đơn nào không
+    const billsWithProduct = await Bill.find({ 'cartItems.product': req.params.id });
+    if (billsWithProduct.length > 0) {
+      return res.status(400).json({
+        message: "Không thể xóa sản phẩm vì đã được sử dụng trong các đơn hàng"
+      });
+    }
+
+    // Kiểm tra xem sản phẩm có trong bất kỳ giỏ hàng nào không
+    const carts = await Cart.find({ "cartItems.product": req.params.id });
+    if (carts.length > 0) {
+      return res.status(400).json({
+        message: "Không thể xóa sản phẩm vì đang có trong giỏ hàng của người dùng"
+      });
+    }
+
+    // Nếu không có giỏ hàng hoặc hóa đơn nào chứa sản phẩm, tiếp tục với việc xóa sản phẩm
     await Product.findByIdAndDelete(req.params.id);
 
     // Thêm thông báo cho admin
@@ -627,7 +775,6 @@ const deleteProduct = async (req, res) => {
       message: "Xóa sản phẩm thành công!",
       data: product
     });
-
   } catch (error) {
     return res.status(500).json({
       message: "Lỗi hệ thống",
@@ -635,6 +782,35 @@ const deleteProduct = async (req, res) => {
     });
   }
 };
+
+const incrementHit = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return res.status(404).json({
+        status: "error",
+        message: "Sản phẩm không tồn tại",
+      });
+    }
+    if (!existingProduct.hits) {
+      await Product.updateOne({ _id: productId }, { $set: { hits: 0 } });
+    }
+    await Product.updateOne({ _id: productId }, { $inc: { hits: 1 } });
+
+    res.status(200).json({
+      status: "success",
+      message: "Đã tăng lượt xem thành công!",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Lỗi máy chủ",
+      error: error.message,
+    });
+  }
+};
+
 
 export {
   addProduct,
@@ -645,5 +821,6 @@ export {
   RestoreProduct,
   deleteProduct,
   updateField,
-  upload,
+  incrementHit,
+
 };

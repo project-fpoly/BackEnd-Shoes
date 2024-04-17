@@ -55,9 +55,9 @@ const ProductSchema = new Schema({
     },
   },
   sale: {
-    type: Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId || String,
     ref: "Sales",
-    required: false,
+    default: null // Đặt giá trị mặc định là null
   },
   discount: {
     type: Number,
