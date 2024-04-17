@@ -17,6 +17,7 @@ const addCartItems = async (req, res) => {
     const quantity = 1;
     const size = req.body.size;
     const product = req.body.product;
+    const productPrice = req.body.price;
     const userId = req.user?._id;
     const a = req.body;
     const { error } = validateCartItems(a);
@@ -54,7 +55,6 @@ const addCartItems = async (req, res) => {
       return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
     }
 
-    const productPrice = productModel.price;
     const productImage = productModel.images;
     const productColor = productModel.color;
 
@@ -107,7 +107,6 @@ const createOrder = async (req, res) => {
   try {
     const { shippingAddress, cartItems, payment_method, totalPrice, voucherr } =
       req.body;
-    console.log(voucherr);
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
     let cart;
@@ -418,16 +417,10 @@ const updateCart = async (req, res) => {
 };
 const updateIsDeliveredOrder = async (req, res) => {
   try {
-    // const { _id: userId } = req.user;
     const { id } = req.params;
     console.log(id);
     const { isDelivered } = req.body;
-    // , user: userId.toString()
-    // Kiểm tra hợp lệ dữ liệu đầu vào
-    // const { error } = validateCart.validate(updatedCartData);
-    // if (error) {
-    //   return res.status(400).json({ error: error.details[0].message });
-    // }
+
     console.log(isDelivered);
     const updatedCart = await Bill.findByIdAndUpdate(
       { _id: id },
@@ -476,13 +469,13 @@ const findUserOrders = async (req, res) => {
     }
     const totalOrders = await Bill.countDocuments({ user: userId, ...query });
 
-    const orders = await Bill.find({ user: userId, ...query })
+    const ordersUser = await Bill.find({ user: userId, ...query })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(totalOrders);
 
     res.json({
-      orders,
+      ordersUser,
       pagination: {
         totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
@@ -624,6 +617,12 @@ const updateOrder = async (req, res) => {
     const { id } = req.params;
     console.log(id);
     const updatedCartData = req.body;
+    const order = await Bill.findOne({ _id: id });
+    let isPaid = order.isPaid;
+    if (updatedCartData.isDelivered === "Đã giao hàng") {
+      isPaid = true;
+    }
+
     // , user: userId.toString()
     // Kiểm tra hợp lệ dữ liệu đầu vào
     // const { error } = validateCart.validate(updatedCartData);
@@ -633,7 +632,7 @@ const updateOrder = async (req, res) => {
 
     const updatedCart = await Bill.findByIdAndUpdate(
       { _id: id },
-      updatedCartData,
+      { ...updatedCartData, isPaid: isPaid }, // Thêm isPaid vào dữ liệu cập nhật
       { new: true }
     );
 
