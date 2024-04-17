@@ -355,6 +355,41 @@ export const getOneUser = async (req, res) => {
     });
   }
 };
+export const getOneUserAll = async (req, res) => {
+  try {
+    let userId;
+      userId = req.params.userId;
+    const projection = {
+      password: 0,
+      emailVerified: 0,
+      emailVerificationToken: 0,
+      emailVerificationExpiry: 0,
+      updatedAt: 0,
+      resetToken: 0,
+      resetTokenExpiry: 0,
+      isDelete:0,
+      deliveryAddress:0,
+      phoneNumbers:0
+    };
+
+    const user = await User.findById(userId, projection);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
 
 export const updateUser = async (req, res) => {
   try {
