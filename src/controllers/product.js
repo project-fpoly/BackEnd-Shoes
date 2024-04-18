@@ -12,8 +12,13 @@ const addProduct = async (req, res) => {
     // Lấy thông tin sản phẩm từ request body
     const { product_id, SKU, name, description, categoryId, price, sale, discount, quantity, sold_count, rating, sizes,
       color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits } = req.body;
+
     // Kiểm tra nếu sale là chuỗi rỗng hoặc null, gán lại giá trị là null
     const saleId = sale === "" || sale === null ? null : sale;
+
+    // Tính giá mới dựa trên discount nếu có sale
+    const priceSale = saleId ? price * (1 - discount / 100) : null;
+
     // Kiểm tra dữ liệu đầu vào sử dụng validator
     const validationResult = productValidator.validate(req.body, {
       abortEarly: false,
@@ -40,7 +45,7 @@ const addProduct = async (req, res) => {
 
     // Tạo sản phẩm mới với sale đã được xử lý
     const newProduct = new Product({
-      product_id, SKU, name, description, categoryId, price, sale: saleId, discount, quantity, sold_count, rating, sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits,
+      product_id, SKU, name, description, categoryId, price, sale: saleId, discount, quantity, sold_count, rating, sizes, color, material, release_date, images, video, blog, warranty, tech_specs, stock_status, gender, isPublished, publishedDate, hits, priceSale
     });
 
     // Lưu sản phẩm vào cơ sở dữ liệu
@@ -76,42 +81,188 @@ const addProduct = async (req, res) => {
 
 
 
-// getAll
-// Hàm lấy tất cả các sản phẩm với phân trang và các bộ lọc
+
 const getAllProduct = async (req, res) => {
   try {
-    // Lấy các tham số truy vấn từ yêu cầu
-    const { page, pageSize, searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, sortOrder, filterOutOfStock } = req.query;
-    // Xây dựng các tùy chọn phân trang
+    let { page, pageSize, searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter,
+      releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter,
+      filterOutOfStock, filterByPriceSale, sortOrder,filterBySale } = req.query;
     const options = {
-      page: parseInt(page, 10) || 1, // Trang mặc định là 1
-      limit: parseInt(pageSize, 10) || 10, // Số lượng sản phẩm trên mỗi trang mặc định là 10
+      page: parseInt(page, 10) || 1,
+      limit: parseInt(pageSize, 10) || 10,
     };
-    // Xây dựng điều kiện tìm kiếm dựa trên các tham số truy vấn
-    const searchCondition = buildSearchCondition(searchKeyword, categoryFilter, sizeFilter, priceFilter, materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, filterOutOfStock);
-    // Xây dựng các tùy chọn sắp xếp
-    const sortOptions = buildSortOptions(sortOrder);
-    // Lấy các sản phẩm với phân trang
-    const { products, total } = await getProductsWithPagination(searchCondition, options);
-    const totalPages = Math.ceil(total / options.limit);
+    const searchKeywordRegex = new RegExp(searchKeyword || "", "i");
+    let searchCondition = {
+      $or: [{ name: searchKeywordRegex }],
+    };
 
-    // Kiểm tra và ẩn những kích thước có quantity = 0 trong mỗi sản phẩm
+    if (categoryFilter) {
+      searchCondition.categoryId = categoryFilter;
+    }
+    if (filterBySale) {
+      searchCondition.sale = filterBySale;
+    }
+
+    if (sizeFilter) {
+      searchCondition["sizes.name"] = sizeFilter;
+    }
+
+    if (priceFilter) {
+      const [minPrice, maxPrice] = priceFilter.split("->");
+      if (minPrice !== "" && maxPrice !== "") {
+        if (!isNaN(minPrice) && !isNaN(maxPrice)) {
+          if (minPrice === maxPrice) {
+            searchCondition.$or = [
+              { priceSale: { $eq: parseInt(minPrice) } },
+              { price: { $eq: parseInt(minPrice) } }
+            ];
+          } else {
+            searchCondition.$or = [
+              { priceSale: { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) } },
+              { price: { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) } }
+            ];
+          }
+        } else {
+          throw new Error("Giá trị minPrice hoặc maxPrice không hợp lệ");
+        }
+      } else if (minPrice !== "") {
+        if (!isNaN(minPrice)) {
+          searchCondition.$or = [
+            { priceSale: { $gte: parseInt(minPrice) } },
+            { price: { $gte: parseInt(minPrice) } }
+          ];
+        } else {
+          throw new Error("Giá trị minPrice không hợp lệ");
+        }
+      } else if (maxPrice !== "") {
+        if (!isNaN(maxPrice)) {
+          searchCondition.$or = [
+            { priceSale: { $lte: parseInt(maxPrice) } },
+            { price: { $lte: parseInt(maxPrice) } }
+          ];
+        } else {
+          throw new Error("Giá trị maxPrice không hợp lệ");
+        }
+      } else {
+        priceFilter = "";
+      }
+    }
+
+    if (materialFilter) {
+      searchCondition.material = materialFilter;
+    }
+
+    if (releaseDateFilter) {
+      const [startDate, endDate] = releaseDateFilter.split("->");
+
+      if (startDate && endDate) {
+        const parsedStartDate = new Date(startDate);
+        const parsedEndDate = new Date(endDate);
+
+        if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
+          if (parsedStartDate.getTime() !== parsedEndDate.getTime()) {
+            searchCondition.release_date = {
+              $gte: parsedStartDate,
+              $lte: parsedEndDate
+            };
+          } else {
+            searchCondition.release_date = { $eq: parsedStartDate };
+          }
+        } else {
+          throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
+        }
+      } else {
+        throw new Error("Thiếu giá trị startDate hoặc endDate trong releaseDateFilter");
+      }
+    }
+
+    if (colorFilter) {
+      searchCondition.color = colorFilter;
+    }
+
+    if (genderFilter) {
+      searchCondition.gender = genderFilter;
+    }
+
+    if (deleteFilter) {
+      searchCondition.isDeleted = deleteFilter;
+    }
+    if (categoryNameFilter) {
+      searchCondition["category.name"] = categoryNameFilter;
+    }
+    if (filterOutOfStock) {
+      searchCondition.quantity = 0;
+    }
+
+    if (filterByPriceSale == 1) {
+      searchCondition.priceSale = { $ne: null };
+    } else if (filterByPriceSale == 0) {
+      searchCondition.priceSale = { $eq: null }
+    }
+
+    const sortOrderMappings = {
+      "asc": { "price": 1 },
+      "desc": { "price": -1 },
+      "asc_views": { "views": 1 },
+      "desc_views": { "views": -1 },
+      "asc_sold": { "sold": 1 },
+      "desc_sold": { "sold": -1 },
+      "asc_rate": { "rating": 1 },
+      "desc_rate": { "rating": -1 },
+      "asc_release_date": { "release_date": 1 },
+      "desc_release_date": { "release_date": -1 },
+      "asc_createdAt": { "createdAt": 1 },
+      "desc_createdAt": { "createdAt": -1 },
+    };
+    const defaultSortOrder = { "price": 0 };
+    const sortOptions = sortOrderMappings[sortOrder] || defaultSortOrder;
+    const products = await Product.find(searchCondition)
+      .skip((options.page - 1) * options.limit)
+      .limit(options.limit)
+      .exec();
+
+    const total = await Product.countDocuments(searchCondition).exec();
+
     products.forEach(product => {
       product.sizes = product.sizes.filter(size => size.quantity > 0);
     });
 
-    // Nếu không có sản phẩm nào được tìm thấy
     if (products.length === 0) {
       return res.status(404).json({
         message: "Không tìm thấy sản phẩm nào",
         data: [],
       });
     }
-    // Populate dữ liệu liên quan cho sản phẩm
+
     const productIds = products.map((product) => product._id);
-    let populatedProducts = {};
-    populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").populate("sale", "name discount description expiration_date").sort(sortOptions);
-    const result = buildResult(populatedProducts, total, options.page, totalPages, options.limit);
+    let populatedProducts = await Product.find({ _id: { $in: productIds } }).populate("categoryId", "name").populate("sale", "name discount description expiration_date").sort(sortOptions);
+
+    const materials = populatedProducts.map((product) => product.material);
+    const colors = populatedProducts.map((product) => product.color);
+    const tech_specs = populatedProducts.map((product) => product.tech_specs);
+    const stockStatuses = populatedProducts.map((product) => product.stock_status);
+    const allSizes = [];
+    populatedProducts.forEach(product => {
+      product.sizes.forEach(size => {
+        if (!allSizes.includes(size.name)) {
+          allSizes.push(size.name);
+        }
+      });
+    });
+
+    const result = {
+      page: options.page,
+      totalDocs: total,
+      totalPages: Math.ceil(total / options.limit),
+      pageSize: options.limit,
+      materials: Array.from(new Set(materials)),
+      colors: Array.from(new Set(colors)),
+      stockStatuses: Array.from(new Set(stockStatuses)),
+      products: populatedProducts,
+      tech_specs: Array.from(new Set(tech_specs)),
+      sizes: allSizes,
+    };
+
     let successMessage = "Hiển thị danh sách sản phẩm thành công.";
     if (searchKeyword) {
       successMessage += " Bạn đã tìm kiếm: " + searchKeyword + ";";
@@ -192,6 +343,7 @@ const getAllProduct = async (req, res) => {
     }
 
     successMessage += " Bạn đã chọn thứ tự sắp xếp theo: " + sortOrderMessage;
+
     res.status(200).json({
       message: successMessage,
       totalProducts: result.totalDocs,
@@ -201,207 +353,12 @@ const getAllProduct = async (req, res) => {
       data: result.products,
     });
   } catch (error) {
-    // Xử lý lỗi nếu có bất kỳ lỗi nào xảy ra
     console.log(error);
     res.status(500).json({
       message: "Đã có lỗi xảy ra",
       data: [],
     });
   }
-};
-
-// Hàm xây dựng điều kiện tìm kiếm dựa trên các tham số truy vấn
-const buildSearchCondition = (searchKeyword, categoryFilter, sizeFilter, priceFilter,
-  materialFilter, releaseDateFilter, colorFilter, genderFilter, deleteFilter, categoryNameFilter, stockStatusFilter, filterOutOfStock) => {
-  // Tạo biểu thức chính quy từ từ khóa tìm kiếm và không phân biệt chữ hoa chữ thường
-  const searchKeywordRegex = new RegExp(searchKeyword || "", "i");
-  let searchCondition = {
-    $or: [{ name: searchKeywordRegex }],
-  };
-
-  if (categoryFilter) {
-    searchCondition.categoryId = categoryFilter;
-  }
-
-  if (sizeFilter) {
-    searchCondition["sizes.name"] = sizeFilter;
-  }
-  if (priceFilter) {
-    const [minPrice, maxPrice] = priceFilter.split("->");
-    if (minPrice !== "" && maxPrice !== "") {
-      // Nếu cả hai giá trị min và max đều được cung cấp
-      if (!isNaN(minPrice) && !isNaN(maxPrice)) {
-        // Kiểm tra xem minPrice và maxPrice có phải là số hay không
-        if (minPrice === maxPrice) {
-          // Nếu minPrice bằng maxPrice, áp dụng điều kiện giá bằng
-          searchCondition.price = { $eq: parseInt(minPrice) };
-        } else {
-          // Nếu minPrice khác maxPrice, áp dụng điều kiện giá lớn hơn hoặc bằng minPrice và nhỏ hơn hoặc bằng maxPrice
-          searchCondition.price = { $gte: parseInt(minPrice), $lte: parseInt(maxPrice) };
-        }
-      } else {
-        // Nếu minPrice hoặc maxPrice không phải là số, ném ra một lỗi
-        throw new Error("Giá trị minPrice hoặc maxPrice không hợp lệ");
-      }
-    } else if (minPrice !== "") {
-      // Nếu chỉ có giá trị minPrice được cung cấp
-      if (!isNaN(minPrice)) {
-        // Kiểm tra xem minPrice có phải là số hay không
-        searchCondition.price = { $gte: parseInt(minPrice) };
-      } else {
-        // Nếu minPrice không phải là số, ném ra một lỗi
-        throw new Error("Giá trị minPrice không hợp lệ");
-      }
-    } else if (maxPrice !== "") {
-      // Nếu chỉ có giá trị maxPrice được cung cấp
-      if (!isNaN(maxPrice)) {
-        // Kiểm tra xem maxPrice có phải là số hay không
-        searchCondition.price = { $lte: parseInt(maxPrice) };
-      } else {
-        // Nếu maxPrice không phải là số, ném ra một lỗi
-        throw new Error("Giá trị maxPrice không hợp lệ");
-      }
-    }
-    // Nếu không có giá trị nào trong bộ lọc giá, gán giá trị rỗng
-    else {
-      priceFilter = "";
-    }
-  }
-
-  if (materialFilter) {
-    searchCondition.material = materialFilter;
-  }
-
-  if (releaseDateFilter) {
-    const [startDate, endDate] = releaseDateFilter.split("->");
-
-    if (startDate && endDate) {
-      const parsedStartDate = new Date(startDate);
-      const parsedEndDate = new Date(endDate);
-
-      if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
-        const searchCondition = {};
-
-        if (parsedStartDate.getTime() !== parsedEndDate.getTime()) {
-          searchCondition.release_date = {
-            $gte: parsedStartDate,
-            $lte: parsedEndDate
-          };
-        } else {
-          searchCondition.release_date = { $eq: parsedStartDate };
-        }
-
-        // Sử dụng searchCondition ở đây cho mục đích tiếp theo trong việc tìm kiếm
-      } else {
-        throw new Error("Giá trị startDate hoặc endDate không hợp lệ");
-      }
-    } else {
-      throw new Error("Thiếu giá trị startDate hoặc endDate trong releaseDateFilter");
-    }
-  }
-
-  if (colorFilter) {
-    searchCondition.color = colorFilter;
-  }
-
-  if (genderFilter) {
-    searchCondition.gender = genderFilter;
-  }
-
-  if (deleteFilter) {
-    searchCondition.isDeleted = deleteFilter;
-  }
-  if (categoryNameFilter) {
-    searchCondition["category.name"] = categoryNameFilter;
-  }
-  if (filterOutOfStock) {
-    searchCondition.quantity = 0;
-  }
-  return searchCondition;
-};
-
-const buildSortOptions = (sortOrder) => {
-  const sortOptions = {};
-  if (sortOrder === "asc") {
-    sortOptions.price = 1;
-  } else if (sortOrder === "desc") {
-    sortOptions.price = -1;
-  } else if (sortOrder === "asc_views") {
-    sortOptions.views = 1;
-  } else if (sortOrder === "desc_views") {
-    sortOptions.views = -1;
-  } else if (sortOrder === "asc_sold") {
-    sortOptions.sold = 1;
-  } else if (sortOrder === "desc_sold") {
-    sortOptions.sold = -1;
-  } else if (sortOrder === "asc_sale") {
-    sortOptions.sale = 1;
-  } else if (sortOrder === "desc_sale") {
-    sortOptions.sale = -1;
-  } else if (sortOrder === "asc_rate") {
-    sortOptions.rating = 1;
-  } else if (sortOrder === "desc_rate") {
-    sortOptions.rating = -1;
-  } else if (sortOrder === "asc_release_date") {
-    sortOptions.release_date = 1;
-  } else if (sortOrder === "desc_release_date") {
-    sortOptions.release_date = -1;
-  } else if (sortOrder === "asc_createdAt") {
-    sortOptions.createdAt = 1;
-  } else if (sortOrder === "desc_createdAt") {
-    sortOptions.createdAt = -1;
-  } else {
-    sortOptions.price = 0;
-  }
-
-  return sortOptions;
-};
-
-// Hàm getProductsWithPagination nhận vào điều kiện tìm kiếm (searchCondition) và tùy chọn (options) để truy vấn dữ liệu sản phẩm với phân trang.
-const getProductsWithPagination = async (searchCondition, options) => {
-  // Sử dụng phương thức find() để tìm kiếm các sản phẩm dựa trên điều kiện tìm kiếm được cung cấp.
-  const products = await Product.find(searchCondition)
-    // Sử dụng phương thức skip() để bỏ qua các sản phẩm không cần thiết dựa trên trang hiện tại và số lượng sản phẩm trên mỗi trang.
-    .skip((options.page - 1) * options.limit)
-    // Sử dụng phương thức limit() để giới hạn số lượng sản phẩm được trả về trên mỗi trang.
-    .limit(options.limit)
-    .exec();
-
-  // Sử dụng phương thức countDocuments() để đếm tổng số sản phẩm phù hợp với điều kiện tìm kiếm.
-  const total = await Product.countDocuments(searchCondition).exec();
-
-  // Kết quả cuối cùng là một đối tượng chứa danh sách sản phẩm và tổng số sản phẩm.
-  return { products, total };
-};
-
-const buildResult = (populatedProducts, total, page, totalPages, pageSize) => {
-  const materials = populatedProducts.map((product) => product.material);
-  const colors = populatedProducts.map((product) => product.color);
-  const tech_specs = populatedProducts.map((product) => product.tech_specs);
-  const stockStatuses = populatedProducts.map((product) => product.stock_status);
-  const allSizes = [];
-  populatedProducts.forEach(product => {
-    product.sizes.forEach(size => {
-      if (!allSizes.includes(size.name)) {
-        allSizes.push(size.name);
-      }
-    });
-  });
-
-  const result = {
-    page: page,
-    totalDocs: total,
-    totalPages: totalPages,
-    pageSize: pageSize,
-    materials: Array.from(new Set(materials)),
-    colors: Array.from(new Set(colors)),
-    stockStatuses: Array.from(new Set(stockStatuses)),
-    products: populatedProducts,
-    tech_specs: Array.from(new Set(tech_specs)),
-    sizes: allSizes,
-  };
-
-  return result;
 };
 
 export const fetchMaterial = async (req, res) => {
@@ -528,12 +485,26 @@ const getDetailProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const productId = req.params.id;
-    const updateData = req.body;
+    let updateData = req.body;
 
     // Kiểm tra nếu trường "sale" trống, thiết lập nó thành null
     if (updateData.sale === "") {
       updateData.sale = null;
     }
+
+    // Nếu có sale, tính toán giá mới dựa trên discount
+    let priceSale = null;
+    if (updateData.sale) {
+      // Lấy thông tin về sale từ cơ sở dữ liệu
+      const saleInfo = await Sale.findById(updateData.sale);
+      if (saleInfo) {
+        // Tính giá mới dựa trên discount
+        priceSale = (1 - saleInfo.discount / 100) * updateData.price;
+      }
+    }
+
+    // Thêm trường giá sale vào dữ liệu cập nhật
+    updateData.priceSale = priceSale;
 
     // Loại bỏ trường "_id" khỏi các đối tượng size
     if (updateData.sizes && Array.isArray(updateData.sizes)) {
@@ -632,6 +603,7 @@ const updateProduct = async (req, res) => {
     });
   }
 };
+
 
 
 const updateField = async (req, res) => {

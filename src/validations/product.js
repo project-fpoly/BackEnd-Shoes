@@ -31,6 +31,7 @@ const productValidator = Joi.object({
   publishedDate: Joi.date(),
   hits: Joi.number().default(0),
   isDeleted: Joi.boolean().default(false),
+  priceSale: Joi.number().allow(null)
 });
 
 export default productValidator;
