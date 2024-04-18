@@ -105,12 +105,18 @@ const addCartItems = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { shippingAddress, cartItems, payment_method, totalPrice, voucherr } =
-      req.body;
+    const {
+      shippingAddress,
+      cartItems,
+      payment_method,
+      totalPrice,
+      voucherr,
+      voucherName,
+    } = req.body;
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
     let cart;
-    console.log(payment_method);
+    console.log(voucherName);
     if (userId) {
       // Người dùng đã đăng nhập
       cart = await Cart.findOne({ user: userId }).populate("cartItems.product");
@@ -154,14 +160,11 @@ const createOrder = async (req, res) => {
         })),
       ],
       payment_method: payment_method,
-      isDelivered:
-        payment_method === "Thanh toán tiền mặt"
-          ? "Chờ xác nhận"
-          : "Chờ lấy hàng",
+      isDelivered: "Chờ xác nhận",
       isPaid: payment_method === "Thanh toán tiền mặt" ? false : true,
       shippingAddress,
       totalPrice: totalPrice,
-      voucher: voucherr,
+      voucher: voucherName,
       trackingNumber: generateTrackingNumber(),
     });
 
@@ -245,7 +248,26 @@ const createOrder = async (req, res) => {
     console.log(error);
   }
 };
-
+const deleteCart = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { id } = req.params;
+    console.log(id);
+    if (userId) {
+      await Cart.findByIdAndDelete(id);
+    } else {
+      req.session.cart = {
+        cartItems: [],
+        order: order,
+      };
+    }
+    return res.status(200).json({
+      message: "Cart deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+  }
+};
 // Lấy tất cả giỏ hàng của một người dùng
 const getCartItems = async (req, res) => {
   try {
@@ -452,8 +474,9 @@ const findUserOrders = async (req, res) => {
   try {
     const userId = req.user?._id;
     const { page = 1, limit = 10, start, end, search } = req.query;
+    console.log(page);
     let query = {};
-
+    console.log(search);
     if (!userId) {
       return res.status(400).json({ error: "Người dùng chưa đăng nhập" });
     }
@@ -578,7 +601,7 @@ const getAllOrderAdmin = async (req, res) => {
     const orders = await Bill.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(totalOrders);
 
     res.json({
       orders,
@@ -586,7 +609,7 @@ const getAllOrderAdmin = async (req, res) => {
         totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
         currentPage: parseInt(page),
-        limit: search ? totalOrders : parseInt(limit),
+        limit: totalOrders,
       },
     });
   } catch (error) {
@@ -724,4 +747,5 @@ export {
   updateCart,
   updateIsDeliveredOrder,
   getOrderByIdAdmin,
+  deleteCart,
 };
