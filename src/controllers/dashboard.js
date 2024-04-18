@@ -7,7 +7,7 @@ import { DashboardValidator } from "../validations/dashboard";
 function aggregateByMonth(dailyTotal) {
   const aggregatedTotal = {};
   for (const [date, value] of Object.entries(dailyTotal)) {
-    const month = date.split('-').slice(0, 2).join('-');
+    const month = date.split("-").slice(0, 2).join("-");
     if (!aggregatedTotal[month]) {
       aggregatedTotal[month] = 0;
     }
@@ -20,7 +20,7 @@ function aggregateByMonth(dailyTotal) {
 function aggregateByYear(dailyTotal) {
   const aggregatedTotal = {};
   for (const [date, value] of Object.entries(dailyTotal)) {
-    const year = date.split('-')[0];
+    const year = date.split("-")[0];
     if (!aggregatedTotal[year]) {
       aggregatedTotal[year] = 0;
     }
@@ -28,7 +28,6 @@ function aggregateByYear(dailyTotal) {
   }
   return aggregatedTotal;
 }
-
 
 export const getList = async (req, res) => {
   try {
@@ -108,11 +107,11 @@ export const getDataChart = async (req, res) => {
 
       // Tính tổng theo loại (ngày, tháng, năm)
       let aggregatedTotal = {};
-      if (type === 'day' || !type) {
+      if (type === "day" || !type) {
         aggregatedTotal = dailyTotal;
-      } else if (type === 'month') {
+      } else if (type === "month") {
         aggregatedTotal = aggregateByMonth(dailyTotal, startTime, endTime);
-      } else if (type === 'year') {
+      } else if (type === "year") {
         aggregatedTotal = aggregateByYear(dailyTotal);
       }
 
@@ -165,11 +164,11 @@ export const getDataChart = async (req, res) => {
         currentDate.setDate(currentDate.getDate() + 1);
       }
       let aggregatedTotal = {};
-      if (type === 'day' || !type) {
+      if (type === "day" || !type) {
         aggregatedTotal = dailyTotal;
-      } else if (type === 'month') {
+      } else if (type === "month") {
         aggregatedTotal = aggregateByMonth(dailyTotal, startTime, endTime);
-      } else if (type === 'year') {
+      } else if (type === "year") {
         aggregatedTotal = aggregateByYear(dailyTotal);
       }
 
@@ -190,56 +189,66 @@ export const getDataChart = async (req, res) => {
         ],
       });
     } else if (list.name === "Tất cả") {
-        const config = {
-            name: list.name,
-            type: list.type,
-        };
-    
-        const Bills= await Bill.find()
-        const billCountGuest = await Bill.countDocuments({ user: { $exists: false } });
-        const user=await User.find()
-        const product=await Product.find()
-        const totalByStatus = await Bill.aggregate([
-            {
-                $group: {
-                    _id: "$isDelivered",
-                    total: { $sum: 1 }
-                }
-            }
-        ]);
-    
-        const totalRevenue = await Bill.aggregate([
-            {
-                $match: { isDelivered: "Đã giao hàng" }
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: "$totalPrice" }
-                }
-            }
-        ]);
-    
-        const data = {
-            totalAllBill:Bills.length,
-            totalByStatus: totalByStatus.reduce((acc, curr) => {
-                acc[curr._id] = curr.total;
-                return acc;
-            }, {}),
-            totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].total : 0,
-            totalUser:user.length,
-            totalGuest:billCountGuest,
-            totalProduct:product.length
-        };
-    
-        return res.status(200).json({
-            data: [
-                {
-                    config: config,
-                    data: data,
-                },
-            ],
-        });    
+      const config = {
+        name: list.name,
+        type: list.type,
+      };
+
+      const Bills = await Bill.find();
+      const billCountGuest = await Bill.countDocuments({
+        user: { $exists: false },
+      });
+      const user = await User.find();
+      const product = await Product.find();
+      const statusOrder = [
+        "Chờ xác nhận",
+        "Chờ lấy hàng",
+        "Đang giao hàng",
+        "Đã giao hàng",
+        "Đã hủy",
+      ];
+      const totalByStatus = await Bill.aggregate([
+        {
+          $group: {
+            _id: "$isDelivered",
+            total: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const totalRevenue = await Bill.aggregate([
+        {
+          $match: { isDelivered: "Đã giao hàng" },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$totalPrice" },
+          },
+        },
+      ]);
+
+      const sortedTotalByStatus = statusOrder.map((status) => ({
+        [status]: totalByStatus.find((item) => item._id === status)?.total || 0,
+      }));
+
+      const data = {
+        totalAllBill: Bills.length,
+        totalByStatus: Object.assign({}, ...sortedTotalByStatus),
+        totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].total : 0,
+        totalUser: user.length,
+        totalGuest: billCountGuest,
+        totalProduct: product.length,
+      };
+
+      return res.status(200).json({
+        data: [
+          {
+            config: config,
+            data: data,
+          },
+        ],
+      });
     } else {
       res.status(500).json({
         message: "Chưa có dạng này",
