@@ -189,6 +189,49 @@ export const getDataChart = async (req, res) => {
         ],
       });
     } else if (list.name === "Tất cả") {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      yesterday.setUTCHours(0, 0, 0, 0);
+
+      const billstoday = await Bill.aggregate([
+        {
+          $match: {
+            updatedAt: {
+              $gte: today,
+              $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+            },
+            isDelivered: "Đã giao hàng",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$totalPrice" },
+          },
+        },
+      ]);
+
+      const billsyesterday = await Bill.aggregate([
+        {
+          $match: {
+            updatedAt: {
+              $gte: yesterday,
+              $lt: today,
+            },
+            isDelivered: "Đã giao hàng",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$totalPrice" },
+          },
+        },
+      ]);
+      const percentageChange = ((billstoday[0].totalAmount - billsyesterday[0].totalAmount)/billsyesterday[0].totalAmount)  * 100;
       const config = {
         name: list.name,
         type: list.type,
@@ -239,8 +282,38 @@ export const getDataChart = async (req, res) => {
         totalUser: user.length,
         totalGuest: billCountGuest,
         totalProduct: product.length,
+        billstoday:billstoday[0].totalAmount,
+        percentageChange:percentageChange.toFixed(2)
       };
 
+      return res.status(200).json({
+        data: [
+          {
+            config: config,
+            data: data,
+          },
+        ],
+      });
+    } else if (list.name === "Top") {
+      const config = {
+        name: list.name,
+        type: list.type,
+      };
+      const topProducts = await Product.find({})
+        .sort({ sold_count: -1 })
+        .limit(5);
+      const data2 = topProducts.map((product) => {
+        return {
+          name: product.name,
+          price: product.price,
+          quantity: product.quantity,
+          sold_count: product.sold_count,
+          image: product.images,
+        };
+      });
+      const data = {
+        top5product: data2,
+      };
       return res.status(200).json({
         data: [
           {
