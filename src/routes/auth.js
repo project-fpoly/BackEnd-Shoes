@@ -8,6 +8,7 @@ import {
   getOneUser,
   getOneUserAll,
   resetPassword,
+  restoreUser,
   sendEmail,
   signIn,
   signUp,
@@ -43,6 +44,7 @@ routerAuth.put("/users/:userId",checkPermissionMember, upload.single("avt"), upd
 
 //xóa băng cách cập nhật isDelete=true
 routerAuth.delete("/user/:id",checkPermission, deleteUser);
+routerAuth.delete("/user/restore/:id",checkPermission, restoreUser);
 
 //chỉ admin mới có quyền xoá hàng loạt
 routerAuth.delete("/more-users",checkPermission, deleteMoreUsers);
