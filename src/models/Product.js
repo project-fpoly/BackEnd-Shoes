@@ -136,6 +136,10 @@ const ProductSchema = new Schema({
     required: false,
     default: false,
   },
+  priceSale: {
+    type: Number,
+    required: false,
+  },
 });
 ProductSchema.virtual('quantity').get(function() {
   return this.sizes.reduce((total, size) => total + size.quantity, 0);

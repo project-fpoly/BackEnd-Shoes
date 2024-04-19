@@ -1,3 +1,5 @@
+import express from "express";
+import { checkPermission } from "../middlewares/checkPermission.js";
 import {
   addProduct,
   getAllProduct,
@@ -11,9 +13,8 @@ import {
   fetchSize,
   fetchTechSpec,
   updateField,
+  updateSoldCount,
 } from "../controllers/product.js";
-import express from "express";
-import { checkPermission } from "../middlewares/checkPermission.js";
 
 const routerProduct = express.Router();
 
@@ -24,7 +25,8 @@ routerProduct.get("/color", fetchColor);
 routerProduct.get("/size", fetchSize);
 routerProduct.get("/tech_spec", fetchTechSpec);
 routerProduct.put("/:id", updateProduct);
-routerProduct.patch("/:id/field",updateField)
+routerProduct.patch("/:id/field", updateField);
+routerProduct.patch("/:id/sold_count", updateSoldCount); 
 routerProduct.patch("/:id/delete", tryDeleteProduct);
 routerProduct.patch("/:id/restore", RestoreProduct);
 routerProduct.delete("/:id", checkPermission, deleteProduct);
