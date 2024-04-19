@@ -277,7 +277,7 @@ export const getDataChart = async (req, res) => {
       const expectedRevenue = await Bill.aggregate([
         {
           $match: {
-            isDelivered: { $in: ["Chờ xác nhận", "Chờ giao hàng", "Đang giao hàng"] }
+            isDelivered: { $in: ["Chờ xác nhận", "Chờ lấy hàng", "Đang giao hàng"] }
           }
         },
         {
