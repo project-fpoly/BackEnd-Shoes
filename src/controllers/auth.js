@@ -230,7 +230,7 @@ export const signIn = async (req, res) => {
         code: 400
       });
     }
-    const user = await User.findOne({ email: req.body.email });
+    const user = await User.findOne({ email: req.body.email,isDelete: false });
     if (!user) {
       return res.status(404).json({
         message: "Email này chưa đăng ký, bạn có muốn đăng ký không?",
@@ -557,6 +557,27 @@ export const deleteUser = async (req, res) => {
 
     return res.status(200).json({
       message: "Đánh dấu người dùng đã bị xóa.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      name: error.name,
+      message: error.message,
+    });
+  }
+};
+export const restoreUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedUser = await User.findByIdAndUpdate(id, { isDelete: false });
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        message: "Không tìm thấy người dùng.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Đánh dấu người dùng đã được khôi phục.",
     });
   } catch (error) {
     return res.status(500).json({
