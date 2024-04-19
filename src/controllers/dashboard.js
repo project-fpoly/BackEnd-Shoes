@@ -274,7 +274,22 @@ export const getDataChart = async (req, res) => {
       const sortedTotalByStatus = statusOrder.map((status) => ({
         [status]: totalByStatus.find((item) => item._id === status)?.total || 0,
       }));
-
+      const expectedRevenue = await Bill.aggregate([
+        {
+          $match: {
+            isDelivered: { $in: ["Chờ xác nhận", "Chờ giao hàng", "Đang giao hàng"] }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$totalPrice" }
+          }
+        }
+      ]);
+      
+      const expectedRevenueTotal = expectedRevenue.length > 0 ? expectedRevenue[0].totalAmount : 0;
+      
       const data = {
         totalAllBill: Bills.length,
         totalByStatus: Object.assign({}, ...sortedTotalByStatus),
@@ -283,7 +298,8 @@ export const getDataChart = async (req, res) => {
         totalGuest: billCountGuest,
         totalProduct: product.length,
         billstoday:billstoday[0].totalAmount,
-        percentageChange:percentageChange.toFixed(2)
+        percentageChange:percentageChange.toFixed(2),
+        expectedRevenueTotal
       };
 
       return res.status(200).json({
