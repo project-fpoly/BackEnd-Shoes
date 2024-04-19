@@ -711,6 +711,37 @@ const RestoreProduct = async (req, res) => {
   }
 };
 
+const updateSoldCount = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm"
+      });
+    }
+
+    // Tăng giá trị sold_count lên 1
+    product.sold_count += 1;
+
+    // Lưu lại sản phẩm đã cập nhật
+    const updatedProduct = await product.save();
+
+    return res.status(200).json({
+      message: "Cập nhật trường sản phẩm thành công!",
+      data: updatedProduct
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Lỗi hệ thống",
+      error: error.message
+    });
+  }
+};
+
+
 
 const deleteProduct = async (req, res) => {
   try {
@@ -794,5 +825,6 @@ export {
   deleteProduct,
   updateField,
   incrementHit,
+  updateSoldCount
 
 };
