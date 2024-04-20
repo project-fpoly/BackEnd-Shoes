@@ -574,7 +574,7 @@ const getOrderByIdAdmin = async (req, res) => {
 };
 const getAllOrderAdmin = async (req, res) => {
   try {
-    const { page = 1, limit = 10, start, end, search } = req.query;
+    const { page = 1, limit = 10, start, end, search, key } = req.query;
     let query = {};
     // const { _id: userId } = req.user;
     // const userName = await User.findById(userId);
@@ -601,7 +601,7 @@ const getAllOrderAdmin = async (req, res) => {
     const orders = await Bill.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(totalOrders);
+      .limit(search || key !== "0" ? totalOrders : 10);
 
     res.json({
       orders,
@@ -609,7 +609,7 @@ const getAllOrderAdmin = async (req, res) => {
         totalOrders,
         totalPages: Math.ceil(totalOrders / limit),
         currentPage: parseInt(page),
-        limit: totalOrders,
+        limit: search || key !== "0" ? totalOrders : 10,
       },
     });
   } catch (error) {
