@@ -231,7 +231,35 @@ export const getDataChart = async (req, res) => {
           },
         },
       ]);
-      const percentageChange = ((billstoday[0].totalAmount - billsyesterday[0].totalAmount)/billsyesterday[0].totalAmount)  * 100;
+      const billsyesterday2 = await Bill.aggregate([
+        {
+          $match: {
+            updatedAt: {
+              $gte: today,
+              $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+            },
+            isDelivered: "Đã giao hàng",
+          },
+        },{
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$totalPrice" },
+          },
+        },
+      ]);
+      let percentageChange=0
+      if(billsyesterday.length>0 & billstoday.length>0){
+        percentageChange = ((billstoday[0].totalAmount - billsyesterday[0].totalAmount)/billsyesterday[0].totalAmount)  * 100;
+      }else{
+        if(billsyesterday.length=0){
+          percentageChange = 0
+        }else if(billstoday.length=0){
+          percentageChange = 0
+        }
+      }
+      console.log(percentageChange);
+      console.log(billstoday);
+      console.log(billsyesterday2);
       const config = {
         name: list.name,
         type: list.type,
@@ -297,8 +325,8 @@ export const getDataChart = async (req, res) => {
         totalUser: user.length,
         totalGuest: billCountGuest,
         totalProduct: product.length,
-        billstoday:billstoday[0].totalAmount,
-        percentageChange:percentageChange.toFixed(2),
+        billstoday: billsyesterday2.length>0? billsyesterday2[0].totalAmount:0,
+        percentageChange:percentageChange!=0? percentageChange.toFixed(2):0,
         expectedRevenueTotal
       };
 
