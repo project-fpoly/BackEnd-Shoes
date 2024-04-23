@@ -70,4 +70,29 @@ router.post("/create_payment_url", (req, res, next) => {
     .status(200)
     .json({ message: "thành công", data: vnpUrl, return: vnp_Url });
 });
+
+router.get("/vnpay_return", (req, res, next) => {
+  const vnp_Params = req.query;
+
+  const { vnp_SecureHash: secureHash, ...paramsWithoutHash } = vnp_Params;
+  const sortedParams = Object.fromEntries(
+    Object.entries(paramsWithoutHash).sort()
+  );
+  let tmnCode = "RLE42FCR";
+  let secretKey = "OQPUUZRVSSJASOQVUQHHURHBXGDIMBTU";
+
+  const signData = querystring.stringify(sortedParams, { encode: false });
+  const hmac = crypto.createHmac("sha512", secretKey);
+  const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+
+  if (secureHash === signed) {
+    // Kiểm tra xem dữ liệu trong db có hợp lệ hay không và thông báo kết quả
+    console.log(secureHash);
+
+    res.status(200).json({ code: vnp_Params["vnp_ResponseCode"] });
+  } else {
+    res.status(200).json({ code: "97" });
+  }
+});
+
 export default router;

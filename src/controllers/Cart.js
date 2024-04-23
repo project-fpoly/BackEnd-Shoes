@@ -441,6 +441,7 @@ const updateIsDeliveredOrder = async (req, res) => {
   try {
     const { id } = req.params;
     console.log(id);
+    req.params;
     const { isDelivered } = req.body;
 
     console.log(isDelivered);
