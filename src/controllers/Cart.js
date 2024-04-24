@@ -161,7 +161,7 @@ const createOrder = async (req, res) => {
       ],
       payment_method: payment_method,
       isDelivered: "Chờ xác nhận",
-      isPaid: payment_method === "Thanh toán tiền mặt" ? false : true,
+      isPaid: false,
       shippingAddress,
       totalPrice: totalPrice,
       voucher: voucherName,
@@ -639,21 +639,12 @@ const updateOrder = async (req, res) => {
   try {
     // const { _id: userId } = req.user;
     const { id } = req.params;
-    console.log(id);
     const updatedCartData = req.body;
     const order = await Bill.findOne({ _id: id });
     let isPaid = order.isPaid;
     if (updatedCartData.isDelivered === "Đã giao hàng") {
       isPaid = true;
     }
-
-    // , user: userId.toString()
-    // Kiểm tra hợp lệ dữ liệu đầu vào
-    // const { error } = validateCart.validate(updatedCartData);
-    // if (error) {
-    //   return res.status(400).json({ error: error.details[0].message });
-    // }
-
     const updatedCart = await Bill.findByIdAndUpdate(
       { _id: id },
       { ...updatedCartData, isPaid: isPaid }, // Thêm isPaid vào dữ liệu cập nhật
@@ -668,6 +659,32 @@ const updateOrder = async (req, res) => {
       data: "thanh cong",
     });
     res.json({ message: "Update order complete", updatedCart });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+const updateIsPaidOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedCartData = req.body;
+    const updatedCart = await Bill.findOneAndUpdate(
+      { trackingNumber: id },
+      updatedCartData, // Thêm isPaid vào dữ liệu cập nhật
+      { new: true }
+    );
+
+    console.log("updatedCart", updatedCart);
+    if (!updatedCart) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    const socket = io("http://localhost:9000", { transports: ["websocket"] });
+    socket.emit("realtimeBill", {
+      data: "thanh cong",
+    });
+    res.json({
+      message: `Đơn hàng ${updatedCart.trackingNumber} đã được thanh toán`,
+      updatedCart,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -749,4 +766,5 @@ export {
   updateIsDeliveredOrder,
   getOrderByIdAdmin,
   deleteCart,
+  updateIsPaidOrder,
 };
