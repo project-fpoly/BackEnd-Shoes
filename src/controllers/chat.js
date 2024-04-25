@@ -3,8 +3,8 @@ import chatValidationSchema from '../validations/Chat';
 import Chat from '../models/Chat';
 import User from '../models/User';
 
-const CHAT_ENGINE_PRIVATE_KEY = '0c44367f-c900-47ba-b4cc-76d9472549d1';
-const CHAT_ENGINE_PROJECT_ID = 'f2650ca0-3e46-47c5-a198-6e04fa81d3dc';
+const CHAT_ENGINE_PRIVATE_KEY = '53a15f64-37ee-428a-ae06-2644fbec9780';
+const CHAT_ENGINE_PROJECT_ID = '086d50c6-5443-438c-8766-cfd20e37e71e';
 
 async function registerChatUser(username, secret, email, first_name, last_name, create_by) {
     // Validate dữ liệu đầu vào
