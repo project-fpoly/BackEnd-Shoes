@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import Comment from "../models/Comment.js";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
+import Bill from "../models/Bill.js";
 import {
   commentValidate,
   updateCommentValidate,
@@ -23,11 +24,11 @@ export const createComment = async (req, res) => {
       });
     }
     // check shoeId is exist?
-    const product = await Product.findById(body.shoeId)
-    if(!product) {
-        return res.status(404).json({
-            message: "Product not found"
-        })
+    const product = await Product.findById(body.shoeId);
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
 
     // get userId from header Token middleware
@@ -43,7 +44,29 @@ export const createComment = async (req, res) => {
     });
   }
 };
-
+export const isRatingComment = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { id } = req.params;
+    const bill = await Bill.find({
+      user: _id,
+      isDelivered: "Đã giao hàng",
+      cartItems: {
+        $elemMatch: {
+          product: id,
+        },
+      },
+    });
+    if (!Array.isArray(bill) || bill.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "Chưa mua hàng", isRating: false });
+    }
+    return res.json({ message: "Đã mua hàng", isRating: true });
+  } catch (error) {
+    console.log(error);
+  }
+};
 export const getAllComments = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -57,15 +80,13 @@ export const getAllComments = async (req, res) => {
       select: { password: 0 },
     };
     const searchCondition = {
-      $or: [
-        { content: { $regex: searchKeyword, $options: "i" } },
-      ],
+      $or: [{ content: { $regex: searchKeyword, $options: "i" } }],
     };
     if (shoeId) {
       searchCondition.shoeId = shoeId;
     }
     const data = await Comment.paginate(searchCondition, options);
-    
+
     // Populate the necessary fields after pagination
     await Comment.populate(data.docs, [
       {
@@ -84,41 +105,43 @@ export const getAllComments = async (req, res) => {
         select: "userName _id role avt",
       },
     ]);
-      
+
     // Modify userId for comments where userId is null or not found
-    data.docs.forEach(comment => {
+    data.docs.forEach((comment) => {
       if (!comment.userId) {
         comment.userId = {
           userName: "None",
-          _id: "1", 
+          _id: "1",
           role: "admin",
-          avt:{
-            "publicId":"0",
-            "url":"https://res.cloudinary.com/lamnt/image/upload/v1710477395/book/fdokwbvx5zxrxrqvdrtj.png"
-          }
+          avt: {
+            publicId: "0",
+            url: "https://res.cloudinary.com/lamnt/image/upload/v1710477395/book/fdokwbvx5zxrxrqvdrtj.png",
+          },
         };
       }
     });
 
     return res.status(200).json({
       ...data,
-      docs: data.docs.map(comment => ({
+      docs: data.docs.map((comment) => ({
         ...comment.toObject(),
-        likes: comment.likes.map(like => ({
+        likes: comment.likes.map((like) => ({
           userName: like.userName,
           _id: like._id,
           role: like.role,
           avt: like.avt,
         })),
-        parentId: comment.parentId ? {
-          ...comment.parentId.toObject(),
-          userId: {
-            userName: comment.parentId.userId.userName,
-            _id: comment.parentId.userId._id,
-            role: comment.parentId.userId.role,
-            avt: comment.parentId.userId.avt,
-          },
-        } : null,
+        parentId: comment.parentId
+          ? {
+              ...comment.parentId.toObject(),
+              userId: {
+                userName: comment.parentId.userId.userName,
+                _id: comment.parentId.userId._id,
+                role: comment.parentId.userId.role,
+                avt: comment.parentId.userId.avt,
+              },
+            }
+          : null,
         userId: {
           userName: comment.userId.userName,
           _id: comment.userId._id,
@@ -198,7 +221,6 @@ export const deleteComment = async (req, res) => {
   }
 };
 
-
 export const likeComment = async (req, res) => {
   const { commentId } = req.body;
   try {
@@ -228,11 +250,11 @@ export const replyComment = async (req, res) => {
       });
     }
     // check shoeId is exist?
-    const cmt = await Comment.findById(req.params.parent_id)
-    if(!cmt) {
-        return res.status(404).json({
-            message: "cmt not found"
-        })
+    const cmt = await Comment.findById(req.params.parent_id);
+    if (!cmt) {
+      return res.status(404).json({
+        message: "cmt not found",
+      });
     }
 
     // get userId from header Token middleware
@@ -246,11 +268,10 @@ export const replyComment = async (req, res) => {
 
     const data = await Comment.create({
       ...body,
-      userId: await User.findById(_id).select('_id userName role avt').lean(),
+      userId: await User.findById(_id).select("_id userName role avt").lean(),
       parentId: req.params.parent_id,
     });
-    
-        
+
     return res.status(201).json({
       message: "Reply comment successfully",
       data,
