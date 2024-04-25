@@ -76,6 +76,9 @@ io.on("connection", (s) => {
   socket.on("client_update_product", async (data) => {
     io.emit('server_update_product', { data: data });
   });
+  socket.on("client_delete_product", async (data) => {
+    io.emit('server_delete_product', { data: data});
+});
 
 
   socket.on("log_out", async (data) => {
