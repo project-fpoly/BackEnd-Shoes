@@ -115,6 +115,7 @@ const createOrder = async (req, res) => {
     } = req.body;
     const userId = req.user?._id;
     const userEmail = shippingAddress.email;
+    const userName = shippingAddress.fullname;
     let cart;
     console.log(voucherName);
     if (userId) {
@@ -215,7 +216,7 @@ const createOrder = async (req, res) => {
     // Thêm thông báo cho admin
     if (userId) {
       await createNotificationForAdmin(
-        `Bạn có đơn hàng ${order.trackingNumber}, được đặt bởi ${userEmail}`,
+        `Bạn có đơn hàng ${order.trackingNumber}, được đặt bởi khách hàng ${userName}`,
         "order",
         req.user._id,
         "admin"
@@ -577,10 +578,6 @@ const getAllOrderAdmin = async (req, res) => {
   try {
     const { page = 1, limit = 10, start, end, search, key } = req.query;
     let query = {};
-    // const { _id: userId } = req.user;
-    // const userName = await User.findById(userId);
-    // console.log(userName);
-
     if (start && end) {
       const startDate = new Date(`${start}T00:00:00.000Z`);
       const endDate = new Date(`${end}T23:59:59.999Z`);
@@ -667,12 +664,14 @@ const updateIsPaidOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const updatedCartData = req.body;
+    const userId = req.user?._id;
+    const userInfo = await User.findOne({ _id: userId });
+
     const updatedCart = await Bill.findOneAndUpdate(
       { trackingNumber: id },
       updatedCartData, // Thêm isPaid vào dữ liệu cập nhật
       { new: true }
     );
-
     console.log("updatedCart", updatedCart);
     if (!updatedCart) {
       return res.status(404).json({ error: "Order not found" });
@@ -681,6 +680,21 @@ const updateIsPaidOrder = async (req, res) => {
     socket.emit("realtimeBill", {
       data: "thanh cong",
     });
+    if (userId) {
+      await createNotificationForAdmin(
+        `Đơn hàng ${id}, đã được khách hàng ${userInfo.userName} thanh toán`,
+        "order",
+        req.user._id,
+        "admin"
+      );
+    } else {
+      await createNotificationForAdmin(
+        `Đơn hàng ${id}, đã được khách thanh toán`,
+        "order",
+        "660684abfe2c726b51e28e4c",
+        "admin"
+      );
+    }
     res.json({
       message: `Đơn hàng ${updatedCart.trackingNumber} đã được thanh toán`,
       updatedCart,
