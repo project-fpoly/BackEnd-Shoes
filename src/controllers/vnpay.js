@@ -28,8 +28,8 @@ router.post("/create_payment_url", (req, res, next) => {
     req.connection.remoteAddress ||
     req.socket.remoteAddress ||
     req.connection.socket.remoteAddress;
-  let tmnCode = "IAJQ18QV";
-  let secretKey = "AJXXRYBMTHRWXTHKSWBGAXDLDFTCWTCG";
+  let tmnCode = "YW0J1STH";
+  let secretKey = "TLITJIILYWMLJKDRGIERRHKYIQPYJEDD";
   let vnpUrl = vnp_Url;
   let returnUrl = vnp_Returnurl;
   const date = new Date();
