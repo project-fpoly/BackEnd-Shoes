@@ -704,12 +704,17 @@ const updateIsPaidOrder = async (req, res) => {
   }
 };
 const updateManyOrder = async (req, res) => {
-  const { ids, isPaid, isDelivered } = req.body;
+  const { ids, isDelivered } = req.body;
   const idList = await Bill.find({ _id: { $in: ids } });
   try {
     const result = await Bill.updateMany(
       { _id: { $in: idList } },
-      { $set: { isPaid, isDelivered } }
+      {
+        $set: {
+          isDelivered,
+          isPaid: isDelivered === "Đã giao hàng" ? true : idList.isPaid,
+        },
+      }
     );
 
     // Kiểm tra kết quả cập nhật
@@ -717,8 +722,7 @@ const updateManyOrder = async (req, res) => {
       // Nếu không có đơn hàng nào được cập nhật, trả về lỗi 404 Not Found
       return res.status(404).json({ error: "Không tìm thấy đơn hàng" });
     }
-    const data = { ids, isPaid, isDelivered };
-    console.log("don", idList);
+    const data = { ids, isDelivered };
 
     const billWithIdUser = [];
 
@@ -731,8 +735,7 @@ const updateManyOrder = async (req, res) => {
     socket.emit("realtimeBill", {
       data: "thanh cong",
     });
-    console.log(billWithIdUser);
-    // Trả về số lượng đơn hàng đã được cập nhật
+
     res.json({
       message: `Cập nhật ${result.modifiedCount} đơn hàng thành công`,
       updates: data,
