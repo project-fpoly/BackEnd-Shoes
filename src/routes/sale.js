@@ -1,6 +1,6 @@
-import { Router } from "express"
-import { checkPermission, checkPermissionMember } from "../middlewares/checkPermission";
-import { createSale, deleteSale, getSales, updateSale } from "../controllers/sale";
+import { Router } from "express";
+import { createSale, deleteSale, getSales, updateSale } from "../controllers/sale.js";
+import { checkPermission } from "../middlewares/checkPermission.js";
 
 const routerSale = Router()
 

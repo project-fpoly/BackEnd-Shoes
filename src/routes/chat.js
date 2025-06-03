@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { registerChatUser, loginChatUser,getAllChatUsers, deleteChatUser ,getUserChatByEmail } from "../controllers/chat";
-import User from '../models/User';
-import { checkPermissionMember } from "../middlewares/checkPermission";
+import { deleteChatUser, getAllChatUsers, getUserChatByEmail, loginChatUser, registerChatUser } from "../controllers/chat.js";
+import { checkPermissionMember } from "../middlewares/checkPermission.js";
 const routerChat = Router();
 routerChat.post("/signup", checkPermissionMember, async (req, res) => {
     const { username, secret, email, first_name, last_name } = req.body;

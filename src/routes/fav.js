@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { addFavItems, getFavItems, removeFavItem } from "../controllers/Fav";
-import { authenticateToken } from "../middlewares/checkOrders";
+import { addFavItems, getFavItems, removeFavItem } from "../controllers/Fav.js";
+import { authenticateToken } from "../middlewares/checkOrders.js";
 const routerFav = Router();
 
 routerFav.post("/favourite", authenticateToken, addFavItems); // Thêm một mục hàng vào yêu thích

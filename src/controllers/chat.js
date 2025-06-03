@@ -1,7 +1,7 @@
 import axios from 'axios';
-import chatValidationSchema from '../validations/Chat';
-import Chat from '../models/Chat';
-import User from '../models/User';
+import Chat from '../models/Chat.js';
+import User from '../models/User.js';
+import chatValidationSchema from '../validations/Chat.js';
 
 const CHAT_ENGINE_PRIVATE_KEY = '53a15f64-37ee-428a-ae06-2644fbec9780';
 const CHAT_ENGINE_PROJECT_ID = '086d50c6-5443-438c-8766-cfd20e37e71e';
@@ -122,4 +122,5 @@ async function getUserChatByEmail(email) {
 
 
 // Export các hàm để có thể sử dụng ở nơi khác trong mã của bạn
-export { registerChatUser, loginChatUser,getAllChatUsers, deleteChatUser,getUserChatByEmail };
+export { deleteChatUser, getAllChatUsers, getUserChatByEmail, loginChatUser, registerChatUser };
+

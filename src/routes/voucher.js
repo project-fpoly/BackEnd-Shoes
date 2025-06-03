@@ -6,8 +6,8 @@ import {
   getVouchers,
   updateVoucher,
   useVoucher,
-} from "../controllers/voucher";
-import { checkPermission } from "../middlewares/checkPermission";
+} from "../controllers/voucher.js";
+import { checkPermission } from "../middlewares/checkPermission.js";
 
 const routerVoucher = Router();
 

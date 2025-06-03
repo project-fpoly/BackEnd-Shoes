@@ -1,8 +1,8 @@
-import Bill from "../models/Bill";
-import ListModel from "../models/dashboard";
-import User from "../models/User.js";
+import Bill from "../models/Bill.js";
+import ListModel from "../models/dashboard.js";
 import Product from "../models/Product.js";
-import { DashboardValidator } from "../validations/dashboard";
+import User from "../models/User.js";
+import { DashboardValidator } from "../validations/dashboard.js";
 // Hàm tính tổng theo tháng
 function aggregateByMonth(dailyTotal) {
   const aggregatedTotal = {};

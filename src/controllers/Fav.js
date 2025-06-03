@@ -1,5 +1,5 @@
-import { Fav } from "../models/Favourite";
-import Product from "../models/Product";
+import { Fav } from "../models/Favourite.js";
+import Product from "../models/Product.js";
 
 export const addFavItems = async (req, res) => {
   try {

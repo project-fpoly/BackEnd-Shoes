@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { checkPermission } from "../middlewares/checkPermission";
-import { analyticController } from "../controllers/analytic";
+import { analyticController } from "../controllers/analytic.js";
 
 const routerAnalytic = Router();
 

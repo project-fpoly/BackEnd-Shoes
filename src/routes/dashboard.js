@@ -1,6 +1,6 @@
-import { Router } from "express"
-import { checkPermission } from "../middlewares/checkPermission";
-import { getDataChart, getList, postList } from "../controllers/dashboard";
+import { Router } from "express";
+import { getDataChart, getList, postList } from "../controllers/dashboard.js";
+import { checkPermission } from "../middlewares/checkPermission.js";
 
 const routerDashboard = Router()
 
